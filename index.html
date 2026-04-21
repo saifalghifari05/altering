@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Vermak Tracker — Tarda Tailor</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; min-height: 100vh; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  input, select, textarea, button { font-family: inherit; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 20px 18px 40px; max-height: 92vh; overflow-y: auto; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .btn-primary { width: 100%; padding: 14px; background: #0d6b62; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .field-label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+  .field-input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color .15s; background: #fff; }
+  .field-input:focus { border-color: #0d6b62; }
+  .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform .15s, box-shadow .15s; }
+  .card:active { transform: scale(0.98); }
+  .fab { position: fixed; bottom: 24px; right: 18px; width: 56px; height: 56px; border-radius: 50%; background: #0d6b62; color: #fff; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 20px rgba(13,107,98,0.45); display: flex; align-items: center; justify-content: center; z-index: 300; line-height: 1; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const STAGES = [
+  { id: "masuk",    label: "Paket Masuk",         short: "Masuk",   emoji: "\uD83D\uDCE6", color: "#64748b", bg: "#f1f5f9" },
+  { id: "cek_ukur", label: "Cek & Ukur",           short: "Cek",     emoji: "\uD83D\uDCCF", color: "#2563eb", bg: "#eff6ff" },
+  { id: "dedel",   label: "Dedel",                short: "Dedel",   emoji: "\u2702\uFE0F", color: "#ea580c", bg: "#fff7ed" },
+  { id: "jahit",   label: "Proses Jahit",         short: "Jahit",   emoji: "\uD83E\uDDF5", color: "#7c3aed", bg: "#f5f3ff" },
+  { id: "qc",      label: "Quality Check",        short: "QC",      emoji: "\uD83D\uDD0D", color: "#db2777", bg: "#fdf2f8" },
+  { id: "selesai", label: "Selesai / Siap Kirim", short: "Selesai", emoji: "\u2705",       color: "#059669", bg: "#f0fdf4" },
+];
+
+const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Rok","Blazer","Kaftan","Abaya","Lainnya"];
+const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Pinggang","Kecilkan Badan","Besarkan","Tambah Kancing","Tambah Resleting","Perbaikan Jahitan","Potong Lengan","Lainnya"];
+
+const GAS_CODE = `// ============================================================
+// GOOGLE APPS SCRIPT — Vermak Tracker Backend  v3
+// CARA SETUP:
+// 1. Buka Google Sheets, Extensions > Apps Script
+// 2. Hapus kode lama, paste kode ini
+// 3. Jalankan initSheet() sekali (▶ Run) → Allow jika diminta
+// 4. Deploy > New deployment > Web app
+//    Execute as: Me | Who has access: Anyone
+// 5. Copy URL, paste ke web app
+//
+// Sudah punya data sebelumnya? Jalankan updateHeaders() saja
+// ============================================================
+
+const SHEET_NAME  = "Vermak";
+const FOLDER_NAME = "Vermak_Photos";
+
+// Nama kolom yang tampil di Google Sheets (bisa diubah bebas)
+const HEADERS = [
+  "No. Order",
+  "Nama Customer",
+  "Jenis Pakaian",
+  "Jenis Vermak",
+  "Catatan",
+  "Status Tahap",
+  "Tgl. Masuk",
+  "Tgl. Update",
+  "Link Foto",
+];
+
+function getOrCreateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    _writeHeaders(sh);
+  }
+  return sh;
+}
+
+function _writeHeaders(sh) {
+  const range = sh.getRange(1, 1, 1, HEADERS.length);
+  range.setValues([HEADERS]);
+  range.setFontWeight("bold")
+       .setBackground("#0d6b62")
+       .setFontColor("#ffffff")
+       .setHorizontalAlignment("center");
+  sh.setFrozenRows(1);
+  // Auto-resize kolom
+  for (let i = 1; i <= HEADERS.length; i++) sh.autoResizeColumn(i);
+}
+
+// Jalankan ini kalau hanya ingin update nama kolom (data tidak hilang)
+function updateHeaders() {
+  const sh = getOrCreateSheet();
+  _writeHeaders(sh);
+  SpreadsheetApp.flush();
+  Logger.log("Header berhasil diperbarui!");
+}
+
+// Mapping posisi kolom → key internal (JANGAN diubah)
+function rowToOrder(row) {
+  return {
+    orderId:      row[0],
+    customerName: row[1],
+    jenisPakaian: row[2],
+    jenisVermak:  row[3],
+    catatan:      row[4],
+    stage:        row[5],
+    createdAt:    row[6],
+    updatedAt:    row[7],
+    photoUrl:     row[8],
+  };
+}
+
+function doGet(e) {
+  try {
+    const sheet = getOrCreateSheet();
+    const data  = sheet.getDataRange().getValues();
+    if (data.length < 2) return out({ orders: [] });
+    const orders = data.slice(1).filter(r => r[0]).map(rowToOrder);
+    return out({ orders });
+  } catch(err) { return out({ error: err.toString() }); }
+}
+
+function doPost(e) {
+  try {
+    const d     = JSON.parse(e.postData.contents);
+    const sheet = getOrCreateSheet();
+
+    if (d.action === "add") {
+      let photoUrl = "";
+      if (d.photo) {
+        try {
+          const fIter  = DriveApp.getFoldersByName(FOLDER_NAME);
+          const folder = fIter.hasNext() ? fIter.next() : DriveApp.createFolder(FOLDER_NAME);
+          const bytes  = Utilities.base64Decode(d.photo);
+          const blob   = Utilities.newBlob(bytes, "image/jpeg", "vmk_"+Date.now()+".jpg");
+          const file   = folder.createFile(blob);
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          photoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+        } catch(photoErr) {
+          Logger.log("Photo upload error: " + photoErr.toString());
+        }
+      }
+      const orderId = "VMK-" + Date.now();
+      const now     = Date.now();
+      sheet.appendRow([orderId, d.customerName, d.jenisPakaian, d.jenisVermak,
+                       d.catatan||"", "masuk", now, now, photoUrl]);
+      SpreadsheetApp.flush();
+      return out({ success: true, orderId });
+    }
+
+    if (d.action === "update_stage") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 6).setValue(d.newStage);   // kolom F = Status Tahap
+          sheet.getRange(i+1, 8).setValue(Date.now());   // kolom H = Tgl. Update
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    if (d.action === "add_photo") {
+      let photoUrl = "";
+      try {
+        const fIter  = DriveApp.getFoldersByName(FOLDER_NAME);
+        const folder = fIter.hasNext() ? fIter.next() : DriveApp.createFolder(FOLDER_NAME);
+        const bytes  = Utilities.base64Decode(d.photo);
+        const blob   = Utilities.newBlob(bytes, "image/jpeg", "vmk_extra_"+Date.now()+".jpg");
+        const file   = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        photoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+      } catch(photoErr) {
+        return out({ error: "Gagal upload foto: " + photoErr.toString() });
+      }
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          const existing = vals[i][8] ? vals[i][8] + "|" + photoUrl : photoUrl;
+          sheet.getRange(i+1, 9).setValue(existing);  // kolom I = Link Foto
+          sheet.getRange(i+1, 8).setValue(Date.now());
+          SpreadsheetApp.flush();
+          return out({ success: true, photoUrl });
+        }
+      }
+      return out({ error: "Order tidak ditemukan" });
+    }
+
+    if (d.action === "update_catatan") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 5).setValue(d.catatan);   // kolom E = Catatan
+          sheet.getRange(i+1, 8).setValue(Date.now());   // kolom H = Tgl. Update
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    return out({ error: "Unknown action: " + d.action });
+  } catch(err) { return out({ error: err.toString() }); }
+}
+
+function out(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function initSheet() {
+  const sh = getOrCreateSheet();
+  _writeHeaders(sh);
+  // Test tulis & hapus untuk verifikasi izin
+  sh.appendRow(["TEST","TEST","TEST","TEST","TEST","masuk",0,0,""]);
+  sh.deleteRow(sh.getLastRow());
+  SpreadsheetApp.flush();
+  Logger.log("initSheet BERHASIL! Sheet siap digunakan.");
+}`;
+
+// Parse multi-photo: stored as URL1|URL2|URL3
+function getPhotos(photoUrl) {
+  if (!photoUrl) return [];
+  return String(photoUrl).split("|").map(s => s.trim()).filter(Boolean);
+}
+
+function formatDate(ts) {
+  if (!ts) return "-";
+  return new Date(Number(ts)).toLocaleDateString("id-ID",
+    { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+/* ── Setup Screen ── */
+function SetupScreen({ onSave }) {
+  const [url, setUrl] = useState("");
+  const [guide, setGuide] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(GAS_CODE).then(() => alert("Kode berhasil dicopy!")); };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:420 }}>
+        <div style={{ textAlign:"center", marginBottom:28, color:"#fff" }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>🧵</div>
+          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>Vermak Tracker</h1>
+          <p style={{ fontSize:14, opacity:.8, marginTop:6 }}>Tarda Tailor — Monitoring Alur Vermak</p>
+        </div>
+        <div style={{ background:"#fff", borderRadius:20, padding:24 }}>
+          <p style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Masukkan URL Google Apps Script:</p>
+          <input className="field-input" value={url} onChange={e => setUrl(e.target.value)}
+            placeholder="https://script.google.com/macros/s/..." style={{ marginBottom:12 }} />
+          <button className="btn-primary" onClick={() => url.trim() && onSave(url.trim())}>Mulai Tracking →</button>
+          <button onClick={() => setGuide(!guide)} style={{ width:"100%", marginTop:10, padding:"10px", background:"none",
+            border:"1.5px solid #e2e8f0", borderRadius:10, fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+            {guide ? "▲ Tutup" : "▼ Panduan Setup Apps Script"}
+          </button>
+          {guide && (
+            <div style={{ marginTop:14 }}>
+              <div style={{ background:"#f8fafc", borderRadius:10, padding:14, fontSize:12, color:"#475569", lineHeight:1.8, marginBottom:10 }}>
+                <b>Langkah setup:</b><br/>
+                1. Buat Google Sheets baru<br/>
+                2. <b>Extensions → Apps Script</b><br/>
+                3. Hapus kode lama, paste kode di bawah<br/>
+                4. Jalankan fungsi <b>initSheet()</b> (klik Run sekali)<br/>
+                5. <b>Deploy → New deployment → Web app</b><br/>
+                &nbsp;&nbsp;&nbsp;Execute as: <b>Me</b> | Access: <b>Anyone</b><br/>
+                6. Copy URL deployment, paste di atas
+              </div>
+              <div style={{ position:"relative" }}>
+                <textarea readOnly value={GAS_CODE} rows={8} style={{ width:"100%", padding:12,
+                  background:"#1e293b", color:"#94a3b8", border:"none", borderRadius:10,
+                  fontSize:11, fontFamily:"monospace", resize:"none" }} />
+                <button onClick={copy} style={{ position:"absolute", top:8, right:8, padding:"4px 10px",
+                  background:"#0d6b62", color:"#fff", border:"none", borderRadius:6, fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                  Copy
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Order Card ── */
+function OrderCard({ order, onClick }) {
+  const stage = STAGES.find(s => s.id === order.stage) || STAGES[0];
+  const idx   = STAGES.findIndex(s => s.id === order.stage);
+  return (
+    <div className="card" onClick={() => onClick(order)}>
+      <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"flex-start" }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>{order.customerName}</div>
+          <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{order.jenisPakaian} · {order.jenisVermak}</div>
+        </div>
+        {getPhotos(order.photoUrl)[0] && (
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <img src={getPhotos(order.photoUrl)[0]} alt="" style={{ width:48, height:48, borderRadius:10, objectFit:"cover", border:"1.5px solid #f1f5f9" }} />
+            {getPhotos(order.photoUrl).length > 1 && (
+              <div style={{ position:"absolute", bottom:2, right:2, background:"rgba(0,0,0,.6)", color:"#fff",
+                fontSize:9, fontWeight:700, borderRadius:4, padding:"1px 4px" }}>
+                +{getPhotos(order.photoUrl).length - 1}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div style={{ display:"flex", gap:3, margin:"10px 0 8px" }}>
+        {STAGES.map((s,i) => (
+          <div key={s.id} style={{ flex:1, height:4, borderRadius:2,
+            background: i <= idx ? s.color : "#e2e8f0" }} />
+        ))}
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span className="pill" style={{ background:stage.bg, color:stage.color }}>
+          {stage.emoji} {stage.label}
+        </span>
+        <span style={{ fontSize:11, color:"#94a3b8" }}>{formatDate(order.createdAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Add Modal ── */
+function AddModal({ onClose, onSubmit, saving }) {
+  const [form, setForm] = useState({ customerName:"", jenisPakaian:"Gamis", jenisVermak:"Potong Panjang", catatan:"" });
+  const [photoB64, setPhotoB64]   = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const fileRef = useRef();
+  const set = (k,v) => setForm(p => ({...p,[k]:v}));
+
+  const handlePhoto = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 1024;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const dataUrl = canvas.toDataURL("image/jpeg",.78);
+      setPreview(dataUrl);
+      setPhotoB64(dataUrl.split(",")[1]);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submit = () => {
+    if (!form.customerName.trim()) { alert("Nama customer wajib diisi!"); return; }
+    onSubmit({ ...form, photo: photoB64 });
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>📦 Paket Baru</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:16 }}>
+          <label className="field-label">Foto Paket</label>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display:"none" }} />
+          {preview ? (
+            <div style={{ position:"relative" }}>
+              <img src={preview} alt="" style={{ width:"100%", height:190, objectFit:"cover", borderRadius:12, border:"1.5px solid #e2e8f0" }} />
+              <button onClick={() => { setPhotoB64(null); setPreview(null); fileRef.current.value=""; }}
+                style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,.55)", color:"#fff",
+                  border:"none", borderRadius:20, padding:"4px 10px", cursor:"pointer", fontSize:12 }}>Ganti</button>
+            </div>
+          ) : (
+            <div onClick={() => fileRef.current.click()} style={{ border:"2px dashed #cbd5e1", borderRadius:12,
+              padding:24, textAlign:"center", cursor:"pointer", background:"#f8fafc", color:"#94a3b8" }}>
+              <div style={{ fontSize:30, marginBottom:6 }}>📷</div>
+              <div style={{ fontSize:13, fontWeight:600 }}>Ambil Foto / Pilih dari Galeri</div>
+              <div style={{ fontSize:11, marginTop:3 }}>Tap untuk membuka kamera atau galeri</div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label className="field-label">Nama Customer *</label>
+          <input className="field-input" value={form.customerName} onChange={e => set("customerName",e.target.value)} placeholder="Contoh: Bu Siti" />
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+          <div>
+            <label className="field-label">Jenis Pakaian</label>
+            <select className="field-input" value={form.jenisPakaian} onChange={e => set("jenisPakaian",e.target.value)}>
+              {JENIS_PAKAIAN.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Jenis Vermak</label>
+            <select className="field-input" value={form.jenisVermak} onChange={e => set("jenisVermak",e.target.value)}>
+              {JENIS_VERMAK.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <label className="field-label">Catatan (opsional)</label>
+          <textarea className="field-input" value={form.catatan} onChange={e => set("catatan",e.target.value)}
+            rows={3} placeholder="Detail tambahan tentang vermak..." style={{ resize:"none" }} />
+        </div>
+
+        <button className="btn-primary" onClick={submit} disabled={saving}>
+          {saving ? "⏳ Menyimpan & Upload Foto..." : "✓ Simpan Paket"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Detail Modal ── */
+function DetailModal({ order, onClose, onUpdateStage, onUpdateCatatan, onAddPhoto, updating }) {
+  const idx   = STAGES.findIndex(s => s.id === order.stage);
+  const next  = STAGES[idx+1];
+  const [editingCatatan, setEditingCatatan] = useState(false);
+  const [catatanVal, setCatatanVal]         = useState(order.catatan || "");
+  const [savingCatatan, setSavingCatatan]   = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const addPhotoRef = useRef();
+
+  const handleAddPhotoFile = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 1024;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const b64 = canvas.toDataURL("image/jpeg",.78).split(",")[1];
+      setUploadingPhoto(true);
+      await onAddPhoto(order.orderId, b64);
+      setUploadingPhoto(false);
+      addPhotoRef.current.value = "";
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submitCatatan = async () => {
+    setSavingCatatan(true);
+    await onUpdateCatatan(order.orderId, catatanVal);
+    setSavingCatatan(false);
+    setEditingCatatan(false);
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div>
+            <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>{order.customerName}</h2>
+            <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{order.orderId}</div>
+          </div>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        {/* Photo Gallery */}
+        {(() => {
+          const photos = getPhotos(order.photoUrl);
+          return (
+            <div style={{ marginBottom:14 }}>
+              {photos.length > 0 && (
+                <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:8 }}>
+                  {photos.map((url, i) => (
+                    <div key={i} style={{ position:"relative", flexShrink:0 }}>
+                      <img src={url} alt={`foto ${i+1}`} style={{ width: photos.length===1 ? "100%" : 130,
+                        height: photos.length===1 ? 200 : 130, objectFit:"cover",
+                        borderRadius:12, border:"1.5px solid #f1f5f9", display:"block",
+                        minWidth: photos.length===1 ? "100%" : 130 }} />
+                      <div style={{ position:"absolute", bottom:5, left:6, background:"rgba(0,0,0,.5)",
+                        color:"#fff", fontSize:10, fontWeight:700, borderRadius:4, padding:"2px 6px" }}>
+                        {i===0 ? "Paket" : `Foto ${i+1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Tambah Foto Button */}
+              <div>
+                <input ref={addPhotoRef} type="file" accept="image/*" capture="environment"
+                  onChange={handleAddPhotoFile} style={{ display:"none" }} />
+                <button onClick={() => addPhotoRef.current.click()} disabled={uploadingPhoto}
+                  style={{ width:"100%", padding:"10px", background: uploadingPhoto ? "#f1f5f9" : "#f0fdf4",
+                    border:"1.5px dashed " + (uploadingPhoto ? "#cbd5e1" : "#059669"),
+                    borderRadius:10, fontSize:13, color: uploadingPhoto ? "#94a3b8" : "#059669",
+                    cursor: uploadingPhoto ? "not-allowed" : "pointer", fontWeight:600 }}>
+                  {uploadingPhoto ? "⏳ Mengupload foto..." : "📷 Tambah Foto"}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {[["Jenis Pakaian",order.jenisPakaian],["Jenis Vermak",order.jenisVermak],
+              ["Tanggal Masuk",formatDate(order.createdAt)],["Terakhir Update",formatDate(order.updatedAt)]
+            ].map(([lbl,val]) => (
+              <div key={lbl}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{lbl}</div>
+                <div style={{ fontSize:13, color:"#1e293b", fontWeight:600, marginTop:3 }}>{val||"-"}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Catatan dengan tombol edit */}
+          <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Catatan Vermak</div>
+              {!editingCatatan && (
+                <button onClick={() => setEditingCatatan(true)} style={{ background:"none", border:"1px solid #e2e8f0",
+                  borderRadius:6, padding:"3px 10px", fontSize:11, color:"#0d6b62", cursor:"pointer", fontWeight:600 }}>
+                  ✏️ {order.catatan ? "Edit" : "Tambah Catatan"}
+                </button>
+              )}
+            </div>
+            {editingCatatan ? (
+              <div>
+                <textarea className="field-input" value={catatanVal} onChange={e => setCatatanVal(e.target.value)}
+                  rows={3} placeholder="Tulis detail vermak yang dibutuhkan..." autoFocus
+                  style={{ resize:"none", fontSize:13, marginBottom:8 }} />
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={submitCatatan} disabled={savingCatatan} style={{ flex:1, padding:"9px",
+                    background: savingCatatan ? "#94a3b8" : "#0d6b62", color:"#fff", border:"none",
+                    borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    {savingCatatan ? "⏳ Menyimpan..." : "✓ Simpan"}
+                  </button>
+                  <button onClick={() => { setEditingCatatan(false); setCatatanVal(order.catatan||""); }}
+                    style={{ padding:"9px 16px", background:"#f1f5f9", border:"none", borderRadius:8,
+                      fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+                    Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize:13, color: order.catatan ? "#1e293b" : "#94a3b8", fontStyle: order.catatan ? "normal" : "italic" }}>
+                {order.catatan || "Belum ada catatan — tap Edit untuk menambahkan"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:.5, marginBottom:12 }}>Progress Tahapan</div>
+          {STAGES.map((s,i) => {
+            const done   = i < idx;
+            const active = i === idx;
+            return (
+              <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                <div style={{
+                  width:34, height:34, borderRadius:"50%", flexShrink:0, fontSize: active?16:13,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  background: active ? s.color : done ? s.bg : "#f1f5f9",
+                  border: active ? "none" : done ? `2px solid ${s.color}` : "1.5px solid #e2e8f0",
+                  color: active ? "#fff" : done ? s.color : "#cbd5e1", fontWeight:700,
+                }}>
+                  {done ? "✓" : s.emoji}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight: active?700:500, color: active?"#1e293b": i>idx?"#94a3b8":"#64748b" }}>
+                    {s.label}
+                  </div>
+                  {active && <div style={{ fontSize:11, color:s.color, fontWeight:600, marginTop:1 }}>● Sedang diproses</div>}
+                  {done   && <div style={{ fontSize:11, color:"#94a3b8", marginTop:1 }}>Selesai</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {next ? (
+          <button className="btn-primary" onClick={() => onUpdateStage(order.orderId, next.id)}
+            disabled={updating} style={{ background: updating ? "#94a3b8" : next.color }}>
+            {updating ? "⏳ Memperbarui..." : `${next.emoji} Lanjut ke ${next.label}`}
+          </button>
+        ) : (
+          <div style={{ textAlign:"center", padding:16, background:"#f0fdf4", borderRadius:12,
+            color:"#059669", fontWeight:700, fontSize:15 }}>
+            ✅ Order selesai & siap kirim!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main App ── */
+function App() {
+  const [url,       setUrl]       = useState(() => { try { return localStorage.getItem("vt_url")||""; } catch{return "";} });
+  const [orders,    setOrders]    = useState([]);
+  const [refreshing,setRefreshing]= useState(false);
+  const [filter,    setFilter]    = useState("all");
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [selected,  setSelected]  = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const [updating,  setUpdating]  = useState(false);
+  const [lastSync,  setLastSync]  = useState(null);
+
+  const saveUrl = u => { try { localStorage.setItem("vt_url",u); } catch{} setUrl(u); };
+
+  const fetchOrders = async () => {
+    if (!url) return;
+    setRefreshing(true);
+    try {
+      const res  = await fetch(url + "?t="+Date.now());
+      const data = await res.json();
+      if (data.orders) { setOrders(data.orders); setLastSync(new Date()); }
+    } catch(e) { alert("Gagal memuat data. Periksa koneksi atau URL."); }
+    finally { setRefreshing(false); }
+  };
+
+  useEffect(() => { if (url) fetchOrders(); }, [url]);
+
+  const postGAS = async (payload) => {
+    const res = await fetch(url, { method:"POST", redirect:"follow", body: JSON.stringify(payload) });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error("Response bukan JSON. Cek deployment Apps Script.\n" + text.substring(0,300)); }
+  };
+
+  const handleAdd = async fd => {
+    setSaving(true);
+    try {
+      const data = await postGAS({ action:"add", ...fd });
+      if (data.success) { await fetchOrders(); setShowAdd(false); }
+      else alert("Gagal menyimpan!\n\nDetail: " + (data.error||"Tidak ada pesan error") + "\n\nPastikan initSheet() sudah dijalankan di Apps Script.");
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleUpdateStage = async (orderId, newStage) => {
+    setUpdating(true);
+    try {
+      const data = await postGAS({ action:"update_stage", orderId, newStage });
+      if (data.success) { await fetchOrders(); setSelected(null); }
+      else alert("Gagal update!\n\nDetail: " + (data.error||"Unknown error"));
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setUpdating(false); }
+  };
+
+  const handleUpdateCatatan = async (orderId, catatan) => {
+    try {
+      const data = await postGAS({ action:"update_catatan", orderId, catatan });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, catatan} : null);
+      } else alert("Gagal update catatan: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleAddPhoto = async (orderId, photoB64) => {
+    try {
+      const data = await postGAS({ action:"add_photo", orderId, photo: photoB64 });
+      if (data.success) {
+        await fetchOrders();
+        // Update selected order photoUrl in place
+        setSelected(prev => {
+          if (!prev) return null;
+          const existing = prev.photoUrl ? prev.photoUrl + "|" + data.photoUrl : data.photoUrl;
+          return {...prev, photoUrl: existing};
+        });
+      } else alert("Gagal upload foto: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  if (!url) return <SetupScreen onSave={saveUrl} />;
+
+  const counts   = {};
+  STAGES.forEach(s => { counts[s.id] = orders.filter(o => o.stage === s.id).length; });
+  const filtered = filter === "all" ? orders : orders.filter(o => o.stage === filter);
+  const aktif    = orders.filter(o => o.stage !== "selesai").length;
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#f0f4f8" }}>
+
+      {/* Header */}
+      <div style={{ background:"#0d6b62", color:"#fff", padding:"13px 18px",
+        position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 10px rgba(13,107,98,.3)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", maxWidth:500, margin:"0 auto" }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, letterSpacing:-.3 }}>🧵 Vermak Tracker</div>
+            <div style={{ fontSize:11, opacity:.75, marginTop:1 }}>
+              {aktif} aktif · {counts.selesai||0} selesai
+              {lastSync && ` · ${lastSync.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})}`}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={fetchOrders} disabled={refreshing}
+              style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:15 }}>
+              {refreshing ? "⏳" : "🔄"}
+            </button>
+            <button onClick={() => { if(confirm("Ganti URL Apps Script?")){ localStorage.removeItem("vt_url"); setUrl(""); }}}
+              style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+              ⚙️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stage Counter Bar */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", overflowX:"auto" }}>
+        <div style={{ display:"flex", maxWidth:500, margin:"0 auto", padding:"8px 16px", gap:4 }}>
+          {STAGES.map(s => (
+            <div key={s.id} style={{ flex:1, textAlign:"center", minWidth:44 }}>
+              <div style={{ fontSize:17 }}>{s.emoji}</div>
+              <div style={{ fontSize:18, fontWeight:800, color: counts[s.id]>0 ? s.color : "#e2e8f0", lineHeight:1.1 }}>
+                {counts[s.id]||0}
+              </div>
+              <div style={{ fontSize:9, color:"#94a3b8" }}>{s.short}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", overflowX:"auto" }}>
+        <div style={{ display:"flex", gap:4, padding:"8px 14px", maxWidth:500, margin:"0 auto", whiteSpace:"nowrap" }}>
+          <button onClick={() => setFilter("all")} style={{ padding:"5px 14px", borderRadius:20, border:"none",
+            fontSize:12, fontWeight:600, cursor:"pointer",
+            background: filter==="all" ? "#0d6b62" : "#f1f5f9",
+            color: filter==="all" ? "#fff" : "#64748b" }}>
+            Semua ({orders.length})
+          </button>
+          {STAGES.map(s => (
+            <button key={s.id} onClick={() => setFilter(s.id)} style={{ padding:"5px 12px", borderRadius:20, border:"none",
+              fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap",
+              background: filter===s.id ? s.color : "#f1f5f9",
+              color: filter===s.id ? "#fff" : "#64748b" }}>
+              {s.emoji} {s.short} {counts[s.id]>0 ? `(${counts[s.id]})` : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ maxWidth:500, margin:"0 auto", padding:"14px 14px 100px" }}>
+        {refreshing && orders.length===0 && (
+          <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>
+            <div style={{ fontWeight:600 }}>Memuat data...</div>
+          </div>
+        )}
+        {!refreshing && filtered.length===0 && (
+          <div style={{ textAlign:"center", padding:"60px 20px", color:"#94a3b8" }}>
+            <div style={{ fontSize:44, marginBottom:10 }}>📭</div>
+            <div style={{ fontWeight:700, fontSize:15, color:"#64748b" }}>Belum ada order</div>
+            <div style={{ fontSize:13, marginTop:5 }}>Tap tombol + untuk tambah paket baru</div>
+          </div>
+        )}
+        {filtered.map(o => <OrderCard key={o.orderId} order={o} onClick={setSelected} />)}
+      </div>
+
+      {/* FAB */}
+      <button className="fab" onClick={() => setShowAdd(true)}>+</button>
+
+      {showAdd   && <AddModal    onClose={()=>setShowAdd(false)}  onSubmit={handleAdd}         saving={saving}   />}
+      {selected  && <DetailModal order={selected} onClose={()=>setSelected(null)} onUpdateStage={handleUpdateStage} onUpdateCatatan={handleUpdateCatatan} onAddPhoto={handleAddPhoto} updating={updating} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
