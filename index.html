@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Vermak Tracker — Tarda Tailor</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; min-height: 100vh; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  input, select, textarea, button { font-family: inherit; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 20px 18px 40px; max-height: 92vh; overflow-y: auto; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .btn-primary { width: 100%; padding: 14px; background: #0d6b62; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .field-label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+  .field-input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color .15s; background: #fff; }
+  .field-input:focus { border-color: #0d6b62; }
+  .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform .15s, box-shadow .15s; }
+  .card:active { transform: scale(0.98); }
+  .fab { position: fixed; bottom: 24px; right: 18px; width: 56px; height: 56px; border-radius: 50%; background: #0d6b62; color: #fff; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 20px rgba(13,107,98,0.45); display: flex; align-items: center; justify-content: center; z-index: 300; line-height: 1; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const STAGES = [
+  { id: "masuk",     label: "Paket Masuk",  short: "Masuk",   emoji: "\uD83D\uDCE6", color: "#64748b", bg: "#f1f5f9" },
+  { id: "formulasi", label: "Formulasi",    short: "Formula", emoji: "\uD83D\uDCCF", color: "#2563eb", bg: "#eff6ff" },
+  { id: "dedel",     label: "Dedel",        short: "Dedel",   emoji: "\u2702\uFE0F", color: "#ea580c", bg: "#fff7ed" },
+  { id: "jahit",     label: "Proses Jahit", short: "Jahit",   emoji: "\uD83E\uDDF5", color: "#7c3aed", bg: "#f5f3ff" },
+  { id: "kirim",     label: "Dikirim",      short: "Kirim",   emoji: "\uD83D\uDE9A", color: "#0891b2", bg: "#ecfeff" },
+  { id: "selesai",   label: "Selesai",      short: "Selesai", emoji: "\u2705",        color: "#059669", bg: "#f0fdf4" },
+];
+
+// Handle legacy stage id "cek_ukur" from old sheet data
+function normalizeStage(s) { return s === "cek_ukur" ? "formulasi" : (s||"masuk"); }
+
+const ROLES = {
+  owner:      { id:"owner",      label:"Owner",       emoji:"👑", color:"#7c3aed", pinRequired:true  },
+  pic_vermak: { id:"pic_vermak", label:"PIC Vermak",  emoji:"📋", color:"#0d6b62", pinRequired:true  },
+  formulator: { id:"formulator", label:"Formulator",  emoji:"📐", color:"#2563eb", pinRequired:false },
+  penjahit:   { id:"penjahit",   label:"Penjahit",    emoji:"🧵", color:"#ea580c", pinRequired:false },
+  kurir:      { id:"kurir",      label:"Kurir",       emoji:"🚚", color:"#0891b2", pinRequired:false },
+  viewer:     { id:"viewer",     label:"Viewer",      emoji:"👁️", color:"#64748b", pinRequired:false },
+};
+
+// Hak akses per role
+function canAddOrder(role)    { return role==="owner" || role==="pic_vermak"; }
+function canAddPhoto(role)    { return role==="owner" || role==="pic_vermak"; }
+function canEditCatatan(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur";
+  return false;
+}
+function canEditUkuran(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur";
+  return false;
+}
+function canAdvanceStage(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur"; // lanjut ke dedel
+  if (role==="penjahit")   return stage==="jahit";
+  if (role==="kurir")      return stage==="kirim";
+  return false;
+}
+
+const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Rok","Blazer","Kaftan","Abaya","Lainnya"];
+const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Pinggang","Kecilkan Badan","Besarkan","Tambah Kancing","Tambah Resleting","Perbaikan Jahitan","Potong Lengan","Lainnya"];
+
+const GAS_CODE = `// ============================================================
+// GOOGLE APPS SCRIPT — Vermak Tracker Backend  v3
+// CARA SETUP:
+// 1. Buka Google Sheets, Extensions > Apps Script
+// 2. Hapus kode lama, paste kode ini
+// 3. Jalankan initSheet() sekali (▶ Run) → Allow jika diminta
+// 4. Deploy > New deployment > Web app
+//    Execute as: Me | Who has access: Anyone
+// 5. Copy URL, paste ke web app
+//
+// Sudah punya data sebelumnya? Jalankan updateHeaders() saja
+// ============================================================
+
+const SHEET_NAME         = "Vermak";
+const ARCHIVE_SHEET_NAME = "Arsip";
+const FOLDER_NAME        = "Vermak_Photos";
+const ARCHIVE_DAYS       = 7; // order selesai > 7 hari → otomatis arsip
+
+// Nama kolom yang tampil di Google Sheets (bisa diubah bebas)
+const HEADERS = [
+  "No. Order",
+  "Nama Customer",
+  "Jenis Pakaian",
+  "Jenis Vermak",
+  "Catatan",
+  "Status Tahap",
+  "Tgl. Masuk",
+  "Tgl. Update",
+  "Link Foto (RAW)",  // kolom I: URL asli, JANGAN diedit manual
+  "Ukuran",
+];
+
+function getOrCreateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    _writeHeaders(sh);
+  }
+  return sh;
+}
+
+function getOrCreateArchiveSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(ARCHIVE_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(ARCHIVE_SHEET_NAME);
+    const heads = ["No. Order","Nama Customer","Jenis Pakaian","Jenis Vermak",
+                   "Catatan","Status Tahap","Tgl. Masuk","Tgl. Update","Link Foto","Ukuran","Tgl. Arsip"];
+    sh.getRange(1,1,1,heads.length).setValues([heads])
+      .setFontWeight("bold").setBackground("#7c3aed").setFontColor("#fff");
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+// Dipanggil otomatis (trigger harian) atau manual
+function archiveCompleted() {
+  const main    = getOrCreateSheet();
+  const archive = getOrCreateArchiveSheet();
+  const vals    = main.getDataRange().getValues();
+  const now     = new Date();
+  const cutoff  = ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+  const toDelete = [];
+
+  for (let i = vals.length - 1; i >= 1; i--) {
+    if (!vals[i][0]) continue;
+    if (vals[i][5] !== "selesai") continue;
+    const updatedAt = vals[i][7];
+    const updated   = updatedAt instanceof Date ? updatedAt : new Date(Number(updatedAt));
+    if (isNaN(updated.getTime())) continue;
+    if ((now - updated) < cutoff) continue;
+
+    // Tambah ke Arsip
+    const row = [...vals[i], now]; // append Tgl. Arsip
+    archive.appendRow(row);
+    // Format tanggal di arsip
+    const newRow = archive.getLastRow();
+    const fmt    = "dd MMM yyyy, HH:mm";
+    archive.getRange(newRow,7).setNumberFormat(fmt);
+    archive.getRange(newRow,8).setNumberFormat(fmt);
+    archive.getRange(newRow,11).setNumberFormat(fmt);
+    archive.getRange(newRow,10).setBackground("#ede9fe");
+    // Copy rich text foto jika ada
+    try {
+      const rt = main.getRange(i+1,9).getRichTextValue();
+      if (rt) archive.getRange(newRow,9).setRichTextValue(rt);
+    } catch(e){}
+
+    toDelete.push(i+1);
+  }
+
+  // Hapus dari sheet utama (dari bawah ke atas)
+  toDelete.sort((a,b)=>b-a).forEach(r => main.deleteRow(r));
+  SpreadsheetApp.flush();
+  Logger.log("archiveCompleted: " + toDelete.length + " order diarsipkan.");
+  return toDelete.length;
+}
+
+// Jalankan sekali untuk setup trigger harian otomatis jam 02.00
+function setupAutoArchive() {
+  // Hapus trigger lama kalau ada
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === "archiveCompleted")
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  // Buat trigger baru
+  ScriptApp.newTrigger("archiveCompleted")
+    .timeBased().everyDays(1).atHour(2).create();
+  Logger.log("Auto-archive trigger berhasil dibuat! Berjalan setiap hari jam 02.00.");
+}
+
+function _writeHeaders(sh) {
+  const lastRow = sh.getLastRow();
+
+  // Header row styling
+  const range = sh.getRange(1, 1, 1, HEADERS.length);
+  range.setValues([HEADERS]);
+  range.setFontWeight("bold")
+       .setBackground("#0d6b62")
+       .setFontColor("#ffffff")
+       .setHorizontalAlignment("center");
+  sh.setFrozenRows(1);
+
+  // Kolom Ukuran (J = kolom 10) → background biru muda
+  if (lastRow > 1) {
+    sh.getRange(2, 10, lastRow - 1, 1).setBackground("#dbeafe");
+  }
+  // Set default bg biru untuk kolom J (baris kosong ke bawah)
+  sh.getRange(2, 10, 200, 1).setBackground("#dbeafe");
+
+  // Kolom Tgl. Masuk (G=7) & Tgl. Update (H=8) → format tanggal
+  const dateFmt = "dd MMM yyyy, HH:mm";
+  if (lastRow > 1) {
+    sh.getRange(2, 7, lastRow - 1, 1).setNumberFormat(dateFmt);
+    sh.getRange(2, 8, lastRow - 1, 1).setNumberFormat(dateFmt);
+  }
+  sh.getRange(2, 7, 200, 1).setNumberFormat(dateFmt);
+  sh.getRange(2, 8, 200, 1).setNumberFormat(dateFmt);
+
+  // Auto-resize kolom
+  for (let i = 1; i <= HEADERS.length; i++) sh.autoResizeColumn(i);
+}
+
+// Jalankan ini kalau hanya ingin update nama kolom (data tidak hilang)
+function updateHeaders() {
+  const sh = getOrCreateSheet();
+  _writeHeaders(sh);
+  SpreadsheetApp.flush();
+  Logger.log("Header berhasil diperbarui!");
+}
+
+// Mapping posisi kolom → key internal (JANGAN diubah)
+function rowToOrder(row) {
+  return {
+    orderId:      row[0],
+    customerName: row[1],
+    jenisPakaian: row[2],
+    jenisVermak:  row[3],
+    catatan:      row[4],
+    stage:        row[5],
+    createdAt:    row[6],
+    updatedAt:    row[7],
+    photoUrl:     row[8],
+    ukuran:       row[9] || "",
+  };
+}
+
+function doGet(e) {
+  try {
+    // Support ?type=archive untuk fetch data arsip
+    if (e && e.parameter && e.parameter.type === "archive") {
+      const arch  = getOrCreateArchiveSheet();
+      const data  = arch.getDataRange().getValues();
+      const rtV   = arch.getDataRange().getRichTextValues();
+      if (data.length < 2) return out({ orders: [] });
+      const heads = data[0];
+      const orders = data.slice(1).filter(r=>r[0]).map((row,i) => {
+        const obj = {};
+        heads.forEach((h,j) => obj[h] = row[j]);
+        // Map ke field standar
+        const o = {
+          orderId: obj["No. Order"], customerName: obj["Nama Customer"],
+          jenisPakaian: obj["Jenis Pakaian"], jenisVermak: obj["Jenis Vermak"],
+          catatan: obj["Catatan"], stage: "selesai",
+          createdAt: obj["Tgl. Masuk"], updatedAt: obj["Tgl. Update"],
+          photoUrl: obj["Link Foto"]||"", ukuran: obj["Ukuran"]||"",
+          archivedAt: obj["Tgl. Arsip"]
+        };
+        try {
+          const rt = rtV[i+1][8];
+          if (rt) { const urls = rt.getRuns().map(r=>r.getLinkUrl()).filter(Boolean); if(urls.length) o.photoUrl = urls.join("|"); }
+        } catch(ex){}
+        return o;
+      });
+      return out({ orders });
+    }
+
+    const sheet   = getOrCreateSheet();
+    const range   = sheet.getDataRange();
+    const data    = range.getValues();
+    if (data.length < 2) return out({ orders: [] });
+
+    const orders = data.slice(1).filter(r => r[0]).map(function(row, i) {
+      const order = rowToOrder(row);
+      const plainVal = String(row[8]||"").trim();
+
+      if (plainVal.startsWith("http")) {
+        // Data baru: plain text URL — langsung pakai, paling reliable
+        order.photoUrl = plainVal.split(/[\n|]/).map(function(u){return u.trim();}).filter(function(u){return u.startsWith("http");}).join("|");
+      } else {
+        // Data lama (rich text): baca langsung dari cell satu per satu
+        var recovered = "";
+        try {
+          var note = range.offset(i+1, 8, 1, 1).getNote();
+          if (note && note.indexOf("RAW_URLS:") === 0) {
+            recovered = note.replace("RAW_URLS:", "");
+          }
+        } catch(ne) {}
+        if (!recovered) {
+          try {
+            var rt = range.offset(i+1, 8, 1, 1).getRichTextValue();
+            if (rt) {
+              var runs = rt.getRuns();
+              var urls = [];
+              for (var r = 0; r < runs.length; r++) {
+                var link = runs[r].getLinkUrl();
+                if (link) urls.push(link);
+              }
+              if (urls.length > 0) recovered = urls.join("|");
+            }
+          } catch(re) {}
+        }
+        if (recovered) order.photoUrl = recovered;
+      }
+      return order;
+    });
+    return out({ orders });
+  } catch(err) { return out({ error: err.toString() }); }
+}
+
+function doPost(e) {
+  try {
+    const d     = JSON.parse(e.postData.contents);
+    const sheet = getOrCreateSheet();
+
+    if (d.action === "add") {
+      let photoUrl = "";
+      if (d.photo) {
+        try {
+          const fIter  = DriveApp.getFoldersByName(FOLDER_NAME);
+          const folder = fIter.hasNext() ? fIter.next() : DriveApp.createFolder(FOLDER_NAME);
+          const bytes  = Utilities.base64Decode(d.photo);
+          const blob   = Utilities.newBlob(bytes, "image/jpeg", "vmk_"+Date.now()+".jpg");
+          const file   = folder.createFile(blob);
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          photoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+        } catch(photoErr) {
+          Logger.log("Photo upload error: " + photoErr.toString());
+        }
+      }
+      const orderId = "VMK-" + Date.now();
+      const now     = new Date();
+      sheet.appendRow([orderId, d.customerName, d.jenisPakaian, d.jenisVermak,
+                       d.catatan||"", "masuk", now, now, photoUrl, ""]);
+      // Apply date format, blue bg, dan rapihkan link foto
+      const newRow = sheet.getLastRow();
+      const dateFmt = "dd MMM yyyy, HH:mm";
+      sheet.getRange(newRow, 7).setNumberFormat(dateFmt);
+      sheet.getRange(newRow, 8).setNumberFormat(dateFmt);
+      sheet.getRange(newRow, 10).setBackground("#dbeafe");
+      if (photoUrl) setPhotoCell(sheet, newRow, photoUrl); // tampilan + Note backup
+      applyStageColor(sheet, sheet.getLastRow(), "masuk");
+      SpreadsheetApp.flush();
+      return out({ success: true, orderId });
+    }
+
+    if (d.action === "update_stage") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 6).setValue(d.newStage);   // kolom F = Status Tahap
+          sheet.getRange(i+1, 8).setValue(new Date());   // kolom H = Tgl. Update
+          applyStageColor(sheet, i+1, d.newStage);
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    if (d.action === "add_photo") {
+      var newPhotoUrl = "";
+      try {
+        var fIter2  = DriveApp.getFoldersByName(FOLDER_NAME);
+        var folder2 = fIter2.hasNext() ? fIter2.next() : DriveApp.createFolder(FOLDER_NAME);
+        var bytes2  = Utilities.base64Decode(d.photo);
+        var blob2   = Utilities.newBlob(bytes2, "image/jpeg", "vmk_extra_"+Date.now()+".jpg");
+        var file2   = folder2.createFile(blob2);
+        file2.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        newPhotoUrl = "https://lh3.googleusercontent.com/d/" + file2.getId();
+      } catch(pe) { return out({ error: "Gagal upload foto: " + pe.toString() }); }
+      var vals2 = sheet.getDataRange().getValues();
+      for (var j2 = 1; j2 < vals2.length; j2++) {
+        if (String(vals2[j2][0]) === String(d.orderId)) {
+          // Baca existing URLs — 3 lapisan (plain text → Note → rich text)
+          var existingUrls = [];
+          var pVal = String(vals2[j2][8]||"").trim();
+          if (pVal.startsWith("http")) {
+            existingUrls = pVal.split(/[|]/).map(function(u){return u.trim();}).filter(function(u){return u.startsWith("http");});
+          } else {
+            var pNote = sheet.getRange(j2+1, 9).getNote();
+            if (pNote && pNote.indexOf("RAW_URLS:") === 0) {
+              existingUrls = pNote.replace("RAW_URLS:","").split("|").filter(function(u){return u.startsWith("http");});
+            } else {
+              try {
+                var pRt = sheet.getRange(j2+1, 9).getRichTextValue();
+                if (pRt) {
+                  var pRuns = pRt.getRuns();
+                  for (var pr = 0; pr < pRuns.length; pr++) {
+                    var pLink = pRuns[pr].getLinkUrl(); if (pLink) existingUrls.push(pLink);
+                  }
+                }
+              } catch(pre) {}
+            }
+          }
+          existingUrls.push(newPhotoUrl);
+          var combined = existingUrls.join("|");
+          sheet.getRange(j2+1, 8).setValue(new Date());
+          setPhotoCell(sheet, j2+1, combined);
+          SpreadsheetApp.flush();
+          return out({ success: true, photoUrl: newPhotoUrl, allPhotos: combined });
+        }
+      }
+      return out({ error: "Order tidak ditemukan" });
+    }
+
+    if (d.action === "update_catatan") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 5).setValue(d.catatan);
+          sheet.getRange(i+1, 8).setValue(new Date());
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    if (d.action === "update_customer_name") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 2).setValue(d.customerName); // kolom B = Nama Customer
+          sheet.getRange(i+1, 8).setValue(new Date());
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    if (d.action === "update_ukuran") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          sheet.getRange(i+1, 10).setValue(d.ukuran);   // kolom J = Ukuran
+          sheet.getRange(i+1,  8).setValue(new Date());  // kolom H = Tgl. Update
+          SpreadsheetApp.flush();
+          return out({ success: true });
+        }
+      }
+      return out({ error: "Order tidak ditemukan: " + d.orderId });
+    }
+
+    if (d.action === "delete_photo") {
+      const vals = sheet.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(d.orderId)) {
+          // Baca URL dengan cara yang sama seperti doGet (3 lapisan)
+          var urls = [];
+          var plainVal = String(vals[i][8]||"").trim();
+          if (plainVal.startsWith("http")) {
+            // Data baru: plain text
+            urls = plainVal.split(/[\n|]/).map(function(u){return u.trim();}).filter(function(u){return u.startsWith("http");});
+          } else {
+            // Data lama: cek Note dulu
+            var note = sheet.getRange(i+1, 9).getNote();
+            if (note && note.indexOf("RAW_URLS:") === 0) {
+              urls = note.replace("RAW_URLS:", "").split("|").filter(function(u){return u.startsWith("http");});
+            } else {
+              // Fallback: baca dari rich text hyperlink
+              try {
+                var rt = sheet.getRange(i+1, 9).getRichTextValue();
+                if (rt) {
+                  var runs = rt.getRuns();
+                  for (var r = 0; r < runs.length; r++) {
+                    var link = runs[r].getLinkUrl();
+                    if (link) urls.push(link);
+                  }
+                }
+              } catch(re) {}
+            }
+          }
+          // Hapus foto di index yang dipilih
+          urls.splice(d.photoIndex, 1);
+          var newVal = urls.join("|");
+          sheet.getRange(i+1, 8).setValue(new Date());
+          if (newVal) {
+            setPhotoCell(sheet, i+1, newVal);
+          } else {
+            sheet.getRange(i+1, 9).setValue("").setNote("").clearContent();
+          }
+          SpreadsheetApp.flush();
+          return out({ success: true, photoUrl: newVal });
+        }
+      }
+      return out({ error: "Order tidak ditemukan" });
+    }
+
+    if (d.action === "manual_archive") {
+      const count = archiveCompleted();
+      return out({ success: true, count });
+    }
+
+    return out({ error: "Unknown action: " + d.action });
+  } catch(err) { return out({ error: err.toString() }); }
+}
+
+function out(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Warna background per stage untuk kolom Status Tahap
+const STAGE_COLORS = {
+  "masuk":      { bg: "#f1f5f9", font: "#475569" }, // abu
+  "formulasi":  { bg: "#dbeafe", font: "#1d4ed8" }, // biru
+  "cek_ukur":   { bg: "#dbeafe", font: "#1d4ed8" }, // biru (legacy)
+  "dedel":      { bg: "#ffedd5", font: "#c2410c" }, // oranye
+  "jahit":      { bg: "#ede9fe", font: "#6d28d9" }, // ungu
+  "kirim":      { bg: "#cffafe", font: "#0e7490" }, // cyan
+  "selesai":    { bg: "#dcfce7", font: "#15803d" }, // hijau
+};
+
+function applyStageColor(sheet, row, stage) {
+  const c = STAGE_COLORS[stage] || { bg: "#ffffff", font: "#000000" };
+  const cell = sheet.getRange(row, 6); // kolom F = Status Tahap
+  cell.setBackground(c.bg).setFontColor(c.font).setFontWeight("bold").setHorizontalAlignment("center");
+}
+
+// Simpan URL foto sebagai plain text (pipe-separated) — TIDAK pakai rich text
+// agar URL tidak berubah saat script diupdate
+function setPhotoCell(sheet, row, photoUrlString) {
+  if (!photoUrlString) return;
+  const urls = photoUrlString.split("|").map(function(u){ return u.trim(); }).filter(function(u){ return u.startsWith("http"); });
+  if (urls.length === 0) return;
+  const rawJoined = urls.join("|");
+
+  const cell = sheet.getRange(row, 9);
+  // 1. Set plain text dulu (source of truth untuk doGet)
+  cell.setValue(rawJoined).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  // 2. Simpan di Note sebagai backup
+  cell.setNote("RAW_URLS:" + rawJoined);
+  // 3. Buat setiap URL jadi rich text hyperlink dengan label "Foto 1", "Foto 2"
+  // (tetap bisa diklik di sheet, tapi plain text di bawahnya tetap aman)
+  try {
+    var displayText = urls.map(function(u, i){ return "Foto " + (i+1); }).join("  |  ");
+    var builder = SpreadsheetApp.newRichTextValue().setText(displayText);
+    var pos = 0;
+    urls.forEach(function(url, i) {
+      var label = "Foto " + (i+1);
+      builder.setLinkUrl(pos, pos + label.length, url);
+      pos += label.length + (i < urls.length - 1 ? 5 : 0); // +5 untuk "  |  "
+    });
+    cell.setRichTextValue(builder.build());
+    // Kolom I sekarang tampil "Foto 1  |  Foto 2" yang bisa diklik
+    // Plain text backup tetap di Note
+  } catch(e) {
+    Logger.log("Rich text error: " + e);
+    // Fallback: tetap plain text URL
+  }
+}
+
+// Jalankan sekali untuk bersihkan kolom K yang error
+function cleanColumnK() {
+  var sh = getOrCreateSheet();
+  var lastRow = sh.getLastRow();
+  if (lastRow > 1) sh.getRange(2, 11, lastRow - 1, 1).clearContent();
+  Logger.log("Kolom K dibersihkan!");
+}
+
+function initSheet() {
+  const sh = getOrCreateSheet();
+  _writeHeaders(sh);
+  // Test tulis & hapus untuk verifikasi izin
+  sh.appendRow(["TEST","TEST","TEST","TEST","TEST","masuk",new Date(),new Date(),"",""]);
+  sh.deleteRow(sh.getLastRow());
+  SpreadsheetApp.flush();
+  Logger.log("initSheet BERHASIL! Sheet siap digunakan.");
+}
+
+// Jalankan ini SEKALI untuk ganti nama stage "cek_ukur" → "formulasi" di sheet
+function fixStageNames() {
+  const sh   = getOrCreateSheet();
+  const vals = sh.getDataRange().getValues();
+  let count  = 0;
+  for (let i = 1; i < vals.length; i++) {
+    if (vals[i][5] === "cek_ukur") {
+      sh.getRange(i+1, 6).setValue("formulasi");
+      count++;
+    }
+  }
+  SpreadsheetApp.flush();
+  Logger.log("fixStageNames selesai! " + count + " baris diperbarui.");
+}
+
+// Jalankan ini SEKALI untuk perbaiki data lama yang tanggalnya masih angka
+function fixExistingDates() {
+  const sh = getOrCreateSheet();
+  const vals = sh.getDataRange().getValues();
+  const dateFmt = "dd MMM yyyy, HH:mm";
+  for (let i = 1; i < vals.length; i++) {
+    if (!vals[i][0]) continue;
+    // Kolom G (Tgl. Masuk) dan H (Tgl. Update) — konversi timestamp ke Date
+    [7, 8].forEach(col => {
+      const val = vals[i][col - 1];
+      if (val && typeof val === "number") {
+        const d = new Date(val);
+        sh.getRange(i+1, col).setValue(d).setNumberFormat(dateFmt);
+      }
+    });
+    // Kolom J biru muda
+    sh.getRange(i+1, 10).setBackground("#dbeafe");
+    // Rapihkan Link Foto — pastikan tersimpan sebagai plain text
+    const photoVal = vals[i][8];
+    if (photoVal) {
+      const rawUrls = String(photoVal).split(/[\n|]/).map(u=>u.trim()).filter(u=>u.startsWith("http"));
+      if (rawUrls.length > 0) setPhotoCell(sh, i+1, rawUrls.join("|"));
+    }
+    // Warna status tahap
+    applyStageColor(sh, i+1, String(vals[i][5]||"masuk"));
+  }
+  SpreadsheetApp.flush();
+  Logger.log("fixExistingDates SELESAI! " + (vals.length-1) + " baris diproses.");
+}`;
+
+// Parse multi-photo: stored as URL1|URL2|URL3
+// Filter out invalid values like "Foto 1" that might come from broken rich text reads
+function getPhotos(photoUrl) {
+  if (!photoUrl) return [];
+  return String(photoUrl).split("|").map(s => s.trim())
+    .filter(s => s && s.startsWith("http"));
+}
+
+function formatDate(ts) {
+  if (!ts) return "-";
+  const d = (ts instanceof Date) ? ts : (isNaN(Number(ts)) ? new Date(ts) : new Date(Number(ts)));
+  if (!d || isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID",
+    { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+/* ── Setup Screen ── */
+/* ── PIN Numpad ── */
+function PinModal({ roleId, onSuccess, onCancel }) {
+  const role = ROLES[roleId];
+  const [pin, setPin] = useState("");
+  const [shake, setShake] = useState(false);
+
+  const PIN_MAX = 6;
+  const getStored = () => { try { return localStorage.getItem("vt_pin_"+roleId) || (roleId==="owner" ? "052731" : "1234"); } catch{return "1234";} };
+  const tryPin = (p) => {
+    const stored = getStored();
+    if (p === stored) { onSuccess(); return; }
+    if (p.length >= PIN_MAX || p.length >= stored.length) {
+      setShake(true); setPin(""); setTimeout(() => setShake(false), 500);
+    }
+  };
+  const press = d => {
+    if (pin.length >= PIN_MAX) return;
+    const np = pin + d;
+    setPin(np);
+    const stored = getStored();
+    if (np === stored) { setTimeout(() => onSuccess(), 150); }
+    else if (np.length >= Math.max(PIN_MAX, stored.length)) { setTimeout(() => tryPin(np), 150); }
+  };
+  const del = () => setPin(p => p.slice(0,-1));
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onCancel()}>
+      <div className="sheet" style={{ textAlign:"center" }}>
+        <div style={{ fontSize:28, marginBottom:4 }}>{role.emoji}</div>
+        <div style={{ fontSize:17, fontWeight:800, color:"#1e293b", marginBottom:2 }}>{role.label}</div>
+        <div style={{ fontSize:13, color:"#94a3b8", marginBottom:20 }}>Masukkan PIN untuk login</div>
+
+        {/* PIN dots - dynamic length up to 6 */}
+        <div style={{ display:"flex", justifyContent:"center", gap:12, marginBottom:24,
+          animation: shake ? "shake .4s ease" : "none" }}>
+          {[0,1,2,3,4,5].map(i => (
+            <div key={i} style={{ width:15, height:15, borderRadius:"50%",
+              background: i < pin.length ? role.color : "#e2e8f0",
+              transition:"background .1s", opacity: i >= PIN_MAX ? 0.15 : 1 }} />
+          ))}
+        </div>
+
+        {/* Numpad */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, maxWidth:240, margin:"0 auto 16px" }}>
+          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((d,i) => (
+            <button key={i} onClick={() => d==="⌫" ? del() : d!=="" ? press(String(d)) : null}
+              style={{ padding:"16px 0", fontSize: d==="⌫" ? 18 : 20, fontWeight:700,
+                background: d==="" ? "transparent" : "#f8fafc",
+                border: d==="" ? "none" : "1.5px solid #e2e8f0",
+                borderRadius:12, cursor: d==="" ? "default" : "pointer",
+                color: d==="⌫" ? "#64748b" : "#1e293b" }}>
+              {d}
+            </button>
+          ))}
+        </div>
+        {pin.length >= 4 && (
+          <button onClick={() => tryPin(pin)} style={{ marginBottom:8, padding:"10px 32px",
+            background: ROLES[roleId]?.color || "#0d6b62", color:"#fff", border:"none",
+            borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            ✓ Masuk
+          </button>
+        )}
+        <button onClick={onCancel} style={{ background:"none", border:"none", color:"#94a3b8", fontSize:13, cursor:"pointer" }}>
+          Batal
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Login Screen ── */
+function LoginScreen({ onLogin, onSetup }) {
+  const [pinFor, setPinFor] = useState(null);
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <div style={{ textAlign:"center", color:"#fff", marginBottom:32 }}>
+        <div style={{ fontSize:52, marginBottom:10 }}>🧵</div>
+        <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:-.5 }}>Vermak Tracker</h1>
+        <p style={{ fontSize:14, opacity:.75, marginTop:6 }}>Tarda Tailor — Pilih role Anda</p>
+      </div>
+      <div style={{ width:"100%", maxWidth:360, display:"flex", flexDirection:"column", gap:12 }}>
+        {Object.values(ROLES).map(r => (
+          <button key={r.id} onClick={() => r.pinRequired ? setPinFor(r.id) : onLogin(r.id)}
+            style={{ display:"flex", alignItems:"center", gap:14, padding:"16px 20px",
+              background:"rgba(255,255,255,.12)", border:"1.5px solid rgba(255,255,255,.2)",
+              borderRadius:14, cursor:"pointer", color:"#fff", textAlign:"left" }}>
+            <span style={{ fontSize:26 }}>{r.emoji}</span>
+            <div>
+              <div style={{ fontSize:16, fontWeight:700 }}>{r.label}</div>
+              <div style={{ fontSize:12, opacity:.7, marginTop:1 }}>
+                {r.id==="owner"      && "Akses penuh + pengaturan"}
+                {r.id==="pic_vermak" && "Input paket & kontrol penuh"}
+                {r.id==="formulator" && "Formulasi & lanjut ke Dedel"}
+                {r.id==="penjahit"   && "Proses jahit"}
+                {r.id==="kurir"      && "Pengiriman paket ke customer"}
+                {r.id==="viewer"     && "Lihat progress saja"}
+              </div>
+            </div>
+            {r.pinRequired && <span style={{ marginLeft:"auto", fontSize:14, opacity:.6 }}>🔒</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Tombol atur URL Apps Script */}
+      <button onClick={onSetup} style={{ marginTop:28, background:"none", border:"1px solid rgba(255,255,255,.25)",
+        borderRadius:10, padding:"10px 20px", color:"rgba(255,255,255,.7)", fontSize:13, cursor:"pointer" }}>
+        🔗 Atur URL Apps Script
+      </button>
+
+      {pinFor && <PinModal roleId={pinFor} onSuccess={() => { onLogin(pinFor); setPinFor(null); }} onCancel={() => setPinFor(null)} />}
+    </div>
+  );
+}
+
+/* ── Settings Modal (Owner only) ── */
+function SettingsModal({ onClose, onResetUrl }) {
+  const [pins, setPins] = useState({
+    owner:      (() => { try { return localStorage.getItem("vt_pin_owner")||"052731"; } catch{return "052731";} })(),
+    pic_vermak: (() => { try { return localStorage.getItem("vt_pin_pic_vermak")||"1234"; } catch{return "1234";} })(),
+  });
+  const save = () => {
+    if (pins.owner.length<4 || pins.pic_vermak.length<4) { alert("PIN minimal 4 angka"); return; }
+    try {
+      localStorage.setItem("vt_pin_owner", pins.owner);
+      localStorage.setItem("vt_pin_pic_vermak", pins.pic_vermak);
+    } catch{}
+    alert("PIN berhasil disimpan!");
+    onClose();
+  };
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>⚙️ Pengaturan</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b" }}>✕</button>
+        </div>
+        <div style={{ fontSize:13, fontWeight:700, color:"#475569", marginBottom:14 }}>Ubah PIN Login</div>
+        {[["owner","👑 Owner"],["pic_vermak","📋 PIC Vermak"]].map(([key,lbl]) => (
+          <div key={key} style={{ marginBottom:14 }}>
+            <label className="field-label">{lbl}</label>
+            <input className="field-input" type="number" inputMode="numeric" maxLength={6}
+              value={pins[key]} onChange={e => setPins(p => ({...p,[key]:e.target.value.slice(0,6)}))}
+              placeholder="Masukkan PIN baru" />
+          </div>
+        ))}
+        <button className="btn-primary" onClick={save} style={{ marginBottom:10 }}>💾 Simpan PIN</button>
+        <button onClick={onResetUrl} style={{ width:"100%", padding:12, background:"none",
+          border:"1.5px solid #fca5a5", borderRadius:10, color:"#dc2626", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+          🔗 Ganti URL Apps Script
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SetupScreen({ onSave }) {
+  const [url, setUrl] = useState("");
+  const [guide, setGuide] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(GAS_CODE).then(() => alert("Kode berhasil dicopy!")); };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:420 }}>
+        <div style={{ textAlign:"center", marginBottom:28, color:"#fff" }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>🧵</div>
+          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>Vermak Tracker</h1>
+          <p style={{ fontSize:14, opacity:.8, marginTop:6 }}>Tarda Tailor — Monitoring Alur Vermak</p>
+        </div>
+        <div style={{ background:"#fff", borderRadius:20, padding:24 }}>
+          <p style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Masukkan URL Google Apps Script:</p>
+          <input className="field-input" value={url} onChange={e => setUrl(e.target.value)}
+            placeholder="https://script.google.com/macros/s/..." style={{ marginBottom:12 }} />
+          <button className="btn-primary" onClick={() => url.trim() && onSave(url.trim())}>Mulai Tracking →</button>
+          <button onClick={() => setGuide(!guide)} style={{ width:"100%", marginTop:10, padding:"10px", background:"none",
+            border:"1.5px solid #e2e8f0", borderRadius:10, fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+            {guide ? "▲ Tutup" : "▼ Panduan Setup Apps Script"}
+          </button>
+          {guide && (
+            <div style={{ marginTop:14 }}>
+              <div style={{ background:"#f8fafc", borderRadius:10, padding:14, fontSize:12, color:"#475569", lineHeight:1.8, marginBottom:10 }}>
+                <b>Langkah setup:</b><br/>
+                1. Buat Google Sheets baru<br/>
+                2. <b>Extensions → Apps Script</b><br/>
+                3. Hapus kode lama, paste kode di bawah<br/>
+                4. Jalankan fungsi <b>initSheet()</b> (klik Run sekali)<br/>
+                5. <b>Deploy → New deployment → Web app</b><br/>
+                &nbsp;&nbsp;&nbsp;Execute as: <b>Me</b> | Access: <b>Anyone</b><br/>
+                6. Copy URL deployment, paste di atas
+              </div>
+              <div style={{ position:"relative" }}>
+                <textarea readOnly value={GAS_CODE} rows={8} style={{ width:"100%", padding:12,
+                  background:"#1e293b", color:"#94a3b8", border:"none", borderRadius:10,
+                  fontSize:11, fontFamily:"monospace", resize:"none" }} />
+                <button onClick={copy} style={{ position:"absolute", top:8, right:8, padding:"4px 10px",
+                  background:"#0d6b62", color:"#fff", border:"none", borderRadius:6, fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                  Copy
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Order Card ── */
+function OrderCard({ order, onClick }) {
+  const stage = STAGES.find(s => s.id === normalizeStage(order.stage)) || STAGES[0];
+  const idx   = STAGES.findIndex(s => s.id === normalizeStage(order.stage));
+  return (
+    <div className="card" onClick={() => onClick(order)}>
+      <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"flex-start" }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>{order.customerName}</div>
+          <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{order.jenisPakaian} · {order.jenisVermak}</div>
+        </div>
+        {getPhotos(order.photoUrl)[0] && (
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <img src={getPhotos(order.photoUrl)[0]} alt="" style={{ width:48, height:48, borderRadius:10, objectFit:"cover", border:"1.5px solid #f1f5f9" }} />
+            {getPhotos(order.photoUrl).length > 1 && (
+              <div style={{ position:"absolute", bottom:2, right:2, background:"rgba(0,0,0,.6)", color:"#fff",
+                fontSize:9, fontWeight:700, borderRadius:4, padding:"1px 4px" }}>
+                +{getPhotos(order.photoUrl).length - 1}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div style={{ display:"flex", gap:3, margin:"10px 0 8px" }}>
+        {STAGES.map((s,i) => (
+          <div key={s.id} style={{ flex:1, height:4, borderRadius:2,
+            background: i <= idx ? s.color : "#e2e8f0" }} />
+        ))}
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span className="pill" style={{ background:stage.bg, color:stage.color }}>
+          {stage.emoji} {stage.label}
+        </span>
+        <span style={{ fontSize:11, color:"#94a3b8" }}>{formatDate(order.createdAt)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Add Modal ── */
+function AddModal({ onClose, onSubmit, saving }) {
+  const [form, setForm] = useState({ customerName:"", jenisPakaian:"Gamis", jenisVermak:"Potong Panjang", catatan:"" });
+  const [photoB64, setPhotoB64]   = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const fileRef    = useRef();
+  const galleryRef = useRef();
+  const set = (k,v) => setForm(p => ({...p,[k]:v}));
+
+  const handlePhoto = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 800; // lebih kecil = upload lebih cepat
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const dataUrl = canvas.toDataURL("image/jpeg",.65); // quality lebih rendah = file lebih kecil
+      setPreview(dataUrl);
+      setPhotoB64(dataUrl.split(",")[1]);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submit = () => {
+    if (!form.customerName.trim()) { alert("Nama customer wajib diisi!"); return; }
+    onSubmit({ ...form, photo: photoB64 });
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>📦 Paket Baru</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:16 }}>
+          <label className="field-label">Foto Paket</label>
+          {/* Input kamera — pakai capture=environment supaya langsung buka kamera */}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display:"none" }} />
+          {/* Input galeri — tanpa capture supaya buka file picker */}
+          <input ref={galleryRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display:"none" }} />
+          {preview ? (
+            <div style={{ position:"relative" }}>
+              <img src={preview} alt="" style={{ width:"100%", height:190, objectFit:"cover", borderRadius:12, border:"1.5px solid #e2e8f0" }} />
+              <button onClick={() => { setPhotoB64(null); setPreview(null); fileRef.current.value=""; galleryRef.current.value=""; }}
+                style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,.55)", color:"#fff",
+                  border:"none", borderRadius:20, padding:"4px 10px", cursor:"pointer", fontSize:12 }}>Ganti</button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div onClick={() => fileRef.current.click()} style={{ border:"2px dashed #cbd5e1", borderRadius:12,
+                padding:"18px 10px", textAlign:"center", cursor:"pointer", background:"#f8fafc", color:"#64748b" }}>
+                <div style={{ fontSize:26, marginBottom:5 }}>📷</div>
+                <div style={{ fontSize:12, fontWeight:700 }}>Buka Kamera</div>
+              </div>
+              <div onClick={() => galleryRef.current.click()} style={{ border:"2px dashed #cbd5e1", borderRadius:12,
+                padding:"18px 10px", textAlign:"center", cursor:"pointer", background:"#f8fafc", color:"#64748b" }}>
+                <div style={{ fontSize:26, marginBottom:5 }}>🖼️</div>
+                <div style={{ fontSize:12, fontWeight:700 }}>Pilih Galeri</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label className="field-label">Nama Customer *</label>
+          <input className="field-input" value={form.customerName} onChange={e => set("customerName",e.target.value)} placeholder="Contoh: Bu Siti" />
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+          <div>
+            <label className="field-label">Jenis Pakaian</label>
+            <select className="field-input" value={form.jenisPakaian} onChange={e => set("jenisPakaian",e.target.value)}>
+              {JENIS_PAKAIAN.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Jenis Vermak</label>
+            <select className="field-input" value={form.jenisVermak} onChange={e => set("jenisVermak",e.target.value)}>
+              {JENIS_VERMAK.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <label className="field-label">Catatan (opsional)</label>
+          <textarea className="field-input" value={form.catatan} onChange={e => set("catatan",e.target.value)}
+            rows={3} placeholder="Detail tambahan tentang vermak..." style={{ resize:"none" }} />
+        </div>
+
+        <button className="btn-primary" onClick={submit} disabled={saving}>
+          {saving ? "⏳ Menyimpan..." : "✓ Simpan Paket"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Photo Lightbox ── */
+function PhotoLightbox({ photos, startIndex, onClose }) {
+  const [idx, setIdx]     = useState(startIndex || 0);
+  const [scale, setScale] = useState(1);
+  const [pos, setPos]     = useState({ x:0, y:0 });
+  const lastTap  = useRef(0);
+  const lastDist = useRef(null);
+  const dragStart= useRef(null);
+
+  const reset = () => { setScale(1); setPos({ x:0, y:0 }); };
+  const go    = (n) => { setIdx(n); reset(); };
+
+  // Double-tap to zoom
+  const onTouchEnd = e => {
+    const now = Date.now();
+    if (now - lastTap.current < 280) {
+      setScale(s => s > 1 ? 1 : 2.5);
+      setPos({ x:0, y:0 });
+    }
+    lastTap.current = now;
+    lastDist.current = null;
+  };
+
+  // Pinch zoom
+  const onTouchMove = e => {
+    if (e.touches.length === 2) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastDist.current) {
+        const delta = d - lastDist.current;
+        setScale(s => Math.min(5, Math.max(1, s + delta * 0.01)));
+      }
+      lastDist.current = d;
+      e.preventDefault();
+    } else if (e.touches.length === 1 && scale > 1) {
+      if (dragStart.current) {
+        setPos(p => ({
+          x: p.x + e.touches[0].clientX - dragStart.current.x,
+          y: p.y + e.touches[0].clientY - dragStart.current.y,
+        }));
+      }
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      e.preventDefault();
+    }
+  };
+
+  const onTouchStart = e => {
+    if (e.touches.length === 1) dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.95)", zIndex:1000,
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+
+      {/* Header */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", justifyContent:"space-between",
+        alignItems:"center", padding:"14px 16px", background:"rgba(0,0,0,.4)", zIndex:10 }}>
+        <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>
+          {idx===0 ? "📦 Foto Paket" : `📷 Foto ${idx+1}`}
+          <span style={{ opacity:.5, marginLeft:8 }}>{idx+1} / {photos.length}</span>
+        </div>
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+          {scale > 1 && (
+            <button onClick={reset} style={{ background:"rgba(255,255,255,.15)", border:"none",
+              borderRadius:8, padding:"6px 12px", color:"#fff", cursor:"pointer", fontSize:12 }}>
+              Reset Zoom
+            </button>
+          )}
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,.15)", border:"none",
+            borderRadius:8, padding:"6px 12px", color:"#fff", cursor:"pointer", fontSize:18, lineHeight:1 }}>✕</button>
+        </div>
+      </div>
+
+      {/* Image */}
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+        width:"100%", overflow:"hidden", touchAction:"none" }}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <img src={photos[idx]} alt="" style={{
+          maxWidth:"100%", maxHeight:"85vh", objectFit:"contain",
+          transform: `scale(${scale}) translate(${pos.x/scale}px, ${pos.y/scale}px)`,
+          transition: scale===1 ? "transform .2s" : "none",
+          userSelect:"none", touchAction:"none",
+        }} draggable={false} />
+      </div>
+
+      {/* Nav arrows */}
+      {photos.length > 1 && (
+        <div style={{ position:"absolute", bottom:24, display:"flex", gap:12, alignItems:"center" }}>
+          <button onClick={() => go((idx-1+photos.length)%photos.length)}
+            disabled={photos.length < 2}
+            style={{ background:"rgba(255,255,255,.2)", border:"none", borderRadius:"50%",
+              width:44, height:44, color:"#fff", fontSize:20, cursor:"pointer", display:"flex",
+              alignItems:"center", justifyContent:"center" }}>‹</button>
+          <div style={{ display:"flex", gap:6 }}>
+            {photos.map((_,i) => (
+              <div key={i} onClick={() => go(i)} style={{ width:8, height:8, borderRadius:"50%",
+                background: i===idx ? "#fff" : "rgba(255,255,255,.4)", cursor:"pointer" }} />
+            ))}
+          </div>
+          <button onClick={() => go((idx+1)%photos.length)}
+            style={{ background:"rgba(255,255,255,.2)", border:"none", borderRadius:"50%",
+              width:44, height:44, color:"#fff", fontSize:20, cursor:"pointer", display:"flex",
+              alignItems:"center", justifyContent:"center" }}>›</button>
+        </div>
+      )}
+
+      {/* Hint */}
+      <div style={{ position:"absolute", bottom: photos.length>1 ? 76 : 24, color:"rgba(255,255,255,.35)", fontSize:11 }}>
+        Double tap untuk zoom · Pinch untuk zoom · Geser untuk pan
+      </div>
+    </div>
+  );
+}
+
+/* ── Detail Modal ── */
+function DetailModal({ order, onClose, onUpdateStage, onUpdateCatatan, onUpdateUkuran, onAddPhoto, onDeletePhoto, onUpdateCustomerName, updating, role }) {
+  const idx   = STAGES.findIndex(s => s.id === normalizeStage(order.stage));
+  const next  = STAGES[idx+1];
+  const [lightbox, setLightbox] = useState(null); // { photos, startIndex }
+  const [editingName,    setEditingName]    = useState(false);
+  const [nameVal,        setNameVal]        = useState(order.customerName || "");
+  const [savingName,     setSavingName]     = useState(false);
+  const [editingCatatan, setEditingCatatan] = useState(false);
+
+  const submitName = async () => {
+    if (!nameVal.trim()) return;
+    setSavingName(true);
+    await onUpdateCustomerName(order.orderId, nameVal.trim());
+    setSavingName(false);
+    setEditingName(false);
+  };
+  const [catatanVal, setCatatanVal]         = useState(order.catatan || "");
+  const [savingCatatan, setSavingCatatan]   = useState(false);
+  const [editingUkuran, setEditingUkuran]   = useState(false);
+  const [ukuranVal, setUkuranVal]           = useState(order.ukuran || "");
+  const [savingUkuran, setSavingUkuran]     = useState(false);
+
+  const submitUkuran = async () => {
+    setSavingUkuran(true);
+    await onUpdateUkuran(order.orderId, ukuranVal);
+    setSavingUkuran(false);
+    setEditingUkuran(false);
+  };
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const addPhotoRef   = useRef();
+  const addGalleryRef = useRef();
+
+  const handleAddPhotoFile = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const b64 = canvas.toDataURL("image/jpeg",.65).split(",")[1];
+      setUploadingPhoto(true);
+      await onAddPhoto(order.orderId, b64);
+      setUploadingPhoto(false);
+      addPhotoRef.current.value = "";
+      if (addGalleryRef.current) addGalleryRef.current.value = "";
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submitCatatan = async () => {
+    setSavingCatatan(true);
+    await onUpdateCatatan(order.orderId, catatanVal);
+    setSavingCatatan(false);
+    setEditingCatatan(false);
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div style={{ flex:1 }}>
+            {editingName ? (
+              <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                <input className="field-input" value={nameVal} onChange={e=>setNameVal(e.target.value)}
+                  autoFocus style={{ fontSize:16, fontWeight:700, padding:"6px 10px", flex:1 }}
+                  onKeyDown={e => e.key==="Enter" && submitName()} />
+                <button onClick={submitName} disabled={savingName} style={{ background:"#0d6b62", color:"#fff",
+                  border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
+                  {savingName ? "..." : "✓"}
+                </button>
+                <button onClick={() => { setEditingName(false); setNameVal(order.customerName||""); }}
+                  style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 10px", cursor:"pointer", color:"#64748b" }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>{order.customerName}</h2>
+                {(role==="owner" || role==="pic_vermak") && (
+                  <button onClick={() => setEditingName(true)} style={{ background:"none", border:"none",
+                    color:"#94a3b8", cursor:"pointer", fontSize:14 }}>✏️</button>
+                )}
+              </div>
+            )}
+            <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{order.orderId}</div>
+          </div>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        {/* Photo Gallery */}
+        {(() => {
+          const photos = getPhotos(order.photoUrl);
+          return (
+            <div style={{ marginBottom:14 }}>
+              {photos.length > 0 && (
+                <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:8 }}>
+                  {photos.map((url, i) => (
+                    <div key={i} style={{ position:"relative", flexShrink:0 }}>
+                      <img src={url} alt={`foto ${i+1}`} onClick={() => setLightbox({ photos, startIndex:i })}
+                        style={{ width: photos.length===1 ? "100%" : 130,
+                        height: photos.length===1 ? 200 : 130, objectFit:"cover",
+                        borderRadius:12, border:"1.5px solid #f1f5f9", display:"block",
+                        minWidth: photos.length===1 ? "100%" : 130, cursor:"zoom-in" }} />
+                      <div style={{ position:"absolute", bottom:5, left:6, background:"rgba(0,0,0,.5)",
+                        color:"#fff", fontSize:10, fontWeight:700, borderRadius:4, padding:"2px 6px" }}>
+                        {i===0 ? "Paket" : `Foto ${i+1}`}
+                      </div>
+                      <div style={{ position:"absolute", top:5, right:5, display:"flex", gap:4 }}>
+                        <div onClick={() => setLightbox({ photos, startIndex:i })} style={{ background:"rgba(0,0,0,.45)",
+                          color:"#fff", fontSize:11, borderRadius:4, padding:"2px 5px", cursor:"zoom-in" }}>🔍</div>
+                        {canAddPhoto(role) && (
+                          <div onClick={e => { e.stopPropagation(); onDeletePhoto(order.orderId, i); }}
+                            style={{ background:"rgba(220,38,38,.75)", color:"#fff", fontSize:11,
+                              borderRadius:4, padding:"2px 5px", cursor:"pointer" }}>✕</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Tambah Foto Button */}
+              <div>
+                <input ref={addPhotoRef}   type="file" accept="image/*" capture="environment" onChange={handleAddPhotoFile} style={{ display:"none" }} />
+              <input ref={addGalleryRef} type="file" accept="image/*" onChange={handleAddPhotoFile} style={{ display:"none" }} />
+                {canAddPhoto(role) && (
+                  uploadingPhoto ? (
+                    <div style={{ padding:"10px", textAlign:"center", background:"#f1f5f9", borderRadius:10,
+                      fontSize:13, color:"#94a3b8", fontWeight:600 }}>⏳ Mengupload foto...</div>
+                  ) : (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      <button onClick={() => addPhotoRef.current.click()}
+                        style={{ padding:"10px", background:"#f0fdf4", border:"1.5px dashed #059669",
+                          borderRadius:10, fontSize:12, color:"#059669", cursor:"pointer", fontWeight:700 }}>
+                        📷 Kamera
+                      </button>
+                      <button onClick={() => addGalleryRef.current.click()}
+                        style={{ padding:"10px", background:"#f0fdf4", border:"1.5px dashed #059669",
+                          borderRadius:10, fontSize:12, color:"#059669", cursor:"pointer", fontWeight:700 }}>
+                        🖼️ Galeri
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {[["Jenis Pakaian",order.jenisPakaian],["Jenis Vermak",order.jenisVermak],
+              ["Tanggal Masuk",formatDate(order.createdAt)],["Terakhir Update",formatDate(order.updatedAt)]
+            ].map(([lbl,val]) => (
+              <div key={lbl}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{lbl}</div>
+                <div style={{ fontSize:13, color:"#1e293b", fontWeight:600, marginTop:3 }}>{val||"-"}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Catatan dengan tombol edit */}
+          <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Catatan Vermak</div>
+              {!editingCatatan && canEditCatatan(role, order.stage) && (
+                <button onClick={() => setEditingCatatan(true)} style={{ background:"none", border:"1px solid #e2e8f0",
+                  borderRadius:6, padding:"3px 10px", fontSize:11, color:"#0d6b62", cursor:"pointer", fontWeight:600 }}>
+                  ✏️ {order.catatan ? "Edit" : "Tambah Catatan"}
+                </button>
+              )}
+            </div>
+            {editingCatatan ? (
+              <div>
+                <textarea className="field-input" value={catatanVal} onChange={e => setCatatanVal(e.target.value)}
+                  rows={3} placeholder="Tulis detail vermak yang dibutuhkan..." autoFocus
+                  style={{ resize:"none", fontSize:13, marginBottom:8 }} />
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={submitCatatan} disabled={savingCatatan} style={{ flex:1, padding:"9px",
+                    background: savingCatatan ? "#94a3b8" : "#0d6b62", color:"#fff", border:"none",
+                    borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    {savingCatatan ? "⏳ Menyimpan..." : "✓ Simpan"}
+                  </button>
+                  <button onClick={() => { setEditingCatatan(false); setCatatanVal(order.catatan||""); }}
+                    style={{ padding:"9px 16px", background:"#f1f5f9", border:"none", borderRadius:8,
+                      fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+                    Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize:13, color: order.catatan ? "#1e293b" : "#94a3b8", fontStyle: order.catatan ? "normal" : "italic", whiteSpace:"pre-wrap", lineHeight:1.6 }}>
+                {order.catatan || "Belum ada catatan — tap Edit untuk menambahkan"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ukuran Section */}
+        <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+            <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Ukuran</div>
+            {!editingUkuran && canEditUkuran(role, order.stage) && (
+              <button onClick={() => setEditingUkuran(true)} style={{ background:"none", border:"1px solid #e2e8f0",
+                borderRadius:6, padding:"3px 10px", fontSize:11, color:"#2563eb", cursor:"pointer", fontWeight:600 }}>
+                📐 {order.ukuran ? "Edit" : "Isi Ukuran"}
+              </button>
+            )}
+          </div>
+          {editingUkuran ? (
+            <div>
+              <textarea className="field-input" value={ukuranVal} onChange={e => setUkuranVal(e.target.value)}
+                rows={4} autoFocus placeholder={"Contoh:\nPanjang baju: 140cm\nLingkar dada: 110cm\nLingkar pinggang: 95cm"}
+                style={{ resize:"none", fontSize:13, marginBottom:8, fontFamily:"monospace" }} />
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={submitUkuran} disabled={savingUkuran} style={{ flex:1, padding:"9px",
+                  background: savingUkuran ? "#94a3b8" : "#2563eb", color:"#fff", border:"none",
+                  borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  {savingUkuran ? "⏳ Menyimpan..." : "✓ Simpan Ukuran"}
+                </button>
+                <button onClick={() => { setEditingUkuran(false); setUkuranVal(order.ukuran||""); }}
+                  style={{ padding:"9px 16px", background:"#f1f5f9", border:"none", borderRadius:8,
+                    fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+                  Batal
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize:13, whiteSpace:"pre-wrap", fontFamily: order.ukuran ? "monospace" : "inherit",
+              color: order.ukuran ? "#1e293b" : "#94a3b8", fontStyle: order.ukuran ? "normal" : "italic", lineHeight:1.7 }}>
+              {order.ukuran || "Belum diisi — formulator mengisi setelah cek & ukur"}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:.5, marginBottom:12 }}>Progress Tahapan</div>
+          {STAGES.map((s,i) => {
+            const done   = i < idx;
+            const active = i === idx;
+            return (
+              <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                <div style={{
+                  width:34, height:34, borderRadius:"50%", flexShrink:0, fontSize: active?16:13,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  background: active ? s.color : done ? s.bg : "#f1f5f9",
+                  border: active ? "none" : done ? `2px solid ${s.color}` : "1.5px solid #e2e8f0",
+                  color: active ? "#fff" : done ? s.color : "#cbd5e1", fontWeight:700,
+                }}>
+                  {done ? "✓" : s.emoji}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight: active?700:500, color: active?"#1e293b": i>idx?"#94a3b8":"#64748b" }}>
+                    {s.label}
+                  </div>
+                  {active && <div style={{ fontSize:11, color:s.color, fontWeight:600, marginTop:1 }}>● Sedang diproses</div>}
+                  {done   && <div style={{ fontSize:11, color:"#94a3b8", marginTop:1 }}>Selesai</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {next && canAdvanceStage(role, order.stage) && (
+          <button className="btn-primary" onClick={() => onUpdateStage(order.orderId, next.id)}
+            disabled={updating} style={{ background: updating ? "#94a3b8" : next.color }}>
+            {updating ? "⏳ Memperbarui..." : `${next.emoji} Lanjut ke ${next.label}`}
+          </button>
+        )}
+        {!next && (canAddOrder(role)) && (
+          <div style={{ textAlign:"center", padding:16, background:"#f0fdf4", borderRadius:12,
+            color:"#059669", fontWeight:700, fontSize:15 }}>
+            ✅ Selesai!
+          </div>
+        )}
+        {next && !canAdvanceStage(role, order.stage) && role !== "viewer" && (
+          <div style={{ textAlign:"center", padding:12, background:"#f8fafc", borderRadius:12,
+            color:"#94a3b8", fontSize:13 }}>
+            🔒 Tahap ini dikendalikan oleh role lain
+          </div>
+        )}
+      </div>
+      {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.startIndex} onClose={() => setLightbox(null)} />}
+    </div>
+  );
+}
+
+/* ── Archive Modal ── */
+function ArchiveModal({ url, onClose }) {
+  const [orders,    setOrders]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [search,    setSearch]    = useState("");
+  const [selected,  setSelected]  = useState(null);
+  const [archiving, setArchiving] = useState(false);
+
+  const fetchArchive = async () => {
+    setLoading(true);
+    try {
+      const res  = await fetch(url + "?type=archive&t=" + Date.now());
+      const data = await res.json();
+      if (data.orders) setOrders(data.orders.reverse()); // terbaru di atas
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  const manualArchive = async () => {
+    if (!confirm("Arsipkan semua order Selesai yang sudah lebih dari 7 hari?")) return;
+    setArchiving(true);
+    try {
+      const res  = await fetch(url, { method:"POST", redirect:"follow", body: JSON.stringify({ action:"manual_archive" }) });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.count > 0 ? `✅ ${data.count} order berhasil diarsipkan!` : "Tidak ada order yang perlu diarsipkan saat ini.");
+        await fetchArchive();
+      }
+    } catch(e) { alert("Error: " + e.message); }
+    setArchiving(false);
+  };
+
+  useEffect(() => { fetchArchive(); }, []);
+
+  const sl = search.toLowerCase();
+  const filtered = orders.filter(o =>
+    !sl ||
+    String(o.customerName||"").toLowerCase().includes(sl) ||
+    String(o.jenisVermak||"").toLowerCase().includes(sl) ||
+    String(o.orderId||"").toLowerCase().includes(sl)
+  );
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#f5f3ff", zIndex:600, display:"flex", flexDirection:"column" }}>
+      {/* Header */}
+      <div style={{ background:"#7c3aed", color:"#fff", padding:"13px 18px", boxShadow:"0 2px 10px rgba(124,58,237,.3)", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800 }}>📦 Arsip Order</div>
+            <div style={{ fontSize:11, opacity:.75 }}>{orders.length} order diarsipkan</div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={manualArchive} disabled={archiving} style={{ background:"rgba(255,255,255,.15)",
+              border:"none", borderRadius:8, padding:"8px 12px", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+              {archiving ? "⏳" : "🗂️ Arsipkan Sekarang"}
+            </button>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,.15)", border:"none",
+              borderRadius:8, padding:"8px 12px", color:"#fff", cursor:"pointer", fontSize:15 }}>✕</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e9d5ff", padding:"10px 18px", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", position:"relative" }}>
+          <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#94a3b8" }}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Cari di arsip..." style={{ width:"100%", padding:"9px 12px 9px 36px",
+              border:"1.5px solid #e9d5ff", borderRadius:10, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+        </div>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ background:"#ede9fe", padding:"10px 18px", borderBottom:"1px solid #ddd6fe", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", fontSize:12, color:"#6d28d9" }}>
+          ℹ️ Order berstatus <b>Selesai</b> yang sudah lebih dari <b>7 hari</b> otomatis dipindahkan ke sini setiap malam.
+          Data tetap tersimpan di Google Sheets tab <b>"Arsip"</b>.
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
+        <div style={{ maxWidth:600, margin:"0 auto" }}>
+          {loading && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>
+              <div style={{ fontWeight:600 }}>Memuat arsip...</div>
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+              <div style={{ fontSize:44, marginBottom:10 }}>📭</div>
+              <div style={{ fontWeight:700, color:"#64748b" }}>{search ? "Tidak ada hasil" : "Arsip masih kosong"}</div>
+              <div style={{ fontSize:13, marginTop:5 }}>Order Selesai yang sudah 7+ hari akan muncul di sini</div>
+            </div>
+          )}
+          {filtered.map(o => (
+            <div key={o.orderId} onClick={() => setSelected(o)} style={{ background:"#fff", borderRadius:14,
+              padding:14, marginBottom:10, cursor:"pointer", border:"1px solid #ede9fe",
+              boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", gap:10 }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>{o.customerName}</div>
+                  <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{o.jenisPakaian} · {o.jenisVermak}</div>
+                </div>
+                {getPhotos(o.photoUrl)[0] && (
+                  <img src={getPhotos(o.photoUrl)[0]} alt="" style={{ width:44, height:44, borderRadius:8, objectFit:"cover", flexShrink:0, border:"1.5px solid #ede9fe" }} />
+                )}
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10 }}>
+                <span style={{ background:"#ede9fe", color:"#7c3aed", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20 }}>
+                  📦 Diarsipkan
+                </span>
+                <span style={{ fontSize:11, color:"#94a3b8" }}>{formatDate(o.archivedAt || o.updatedAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Detail view for archived order */}
+      {selected && (
+        <div className="overlay" onClick={e => e.target===e.currentTarget && setSelected(null)}>
+          <div className="sheet">
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div>
+                <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>{selected.customerName}</h2>
+                <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{selected.orderId}</div>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+            </div>
+            {getPhotos(selected.photoUrl).length > 0 && (
+              <div style={{ display:"flex", gap:8, overflowX:"auto", marginBottom:14 }}>
+                {getPhotos(selected.photoUrl).map((url,i) => (
+                  <img key={i} src={url} alt="" style={{ width:130, height:130, objectFit:"cover", borderRadius:12, flexShrink:0, border:"1.5px solid #f1f5f9" }} />
+                ))}
+              </div>
+            )}
+            <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                {[["Jenis Pakaian",selected.jenisPakaian],["Jenis Vermak",selected.jenisVermak],
+                  ["Tgl. Masuk",formatDate(selected.createdAt)],["Diarsipkan",formatDate(selected.archivedAt||selected.updatedAt)]
+                ].map(([l,v]) => (
+                  <div key={l}>
+                    <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{l}</div>
+                    <div style={{ fontSize:13, color:"#1e293b", fontWeight:600, marginTop:3 }}>{v||"-"}</div>
+                  </div>
+                ))}
+              </div>
+              {selected.catatan && <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Catatan Vermak</div>
+                <div style={{ fontSize:13, color:"#1e293b", marginTop:3 }}>{selected.catatan}</div>
+              </div>}
+              {selected.ukuran && <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Ukuran</div>
+                <div style={{ fontSize:13, color:"#1e293b", marginTop:3, whiteSpace:"pre-wrap", fontFamily:"monospace" }}>{selected.ukuran}</div>
+              </div>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main App ── */
+function App() {
+  const [url,       setUrl]       = useState(() => { try { return localStorage.getItem("vt_url")||""; } catch{return "";} });
+  const [role,      setRole]      = useState(() => { try { return localStorage.getItem("vt_role")||null; } catch{return null;} });
+  const [orders,    setOrders]    = useState([]);
+  const [refreshing,setRefreshing]= useState(false);
+  const [filter,    setFilter]    = useState("all");
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [selected,  setSelected]  = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const [updating,  setUpdating]  = useState(false);
+  const [lastSync,  setLastSync]  = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSetup,    setShowSetup]    = useState(false);
+  const [showArchive,  setShowArchive]  = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [sortAsc,      setSortAsc]      = useState(false); // false = terbaru di atas
+
+  const saveUrl  = u => { try { localStorage.setItem("vt_url",u); } catch{} setUrl(u); };
+  const saveRole = r => { try { if(r) localStorage.setItem("vt_role",r); else localStorage.removeItem("vt_role"); } catch{} setRole(r); };
+
+  const [fetchError, setFetchError] = useState("");
+  const fetchOrders = async (silent=false) => {
+    if (!url) return;
+    if (!silent) setRefreshing(true);
+    try {
+      const res  = await fetch(url + "?t="+Date.now());
+      const data = await res.json();
+      if (data.orders) { setOrders(data.orders); setLastSync(new Date()); setFetchError(""); }
+    } catch(e) {
+      if (!silent) setFetchError("⚠️ Gagal memuat data — tap 🔄 untuk coba lagi");
+      // background refresh gagal = silent, tidak ganggu user
+    }
+    finally { if (!silent) setRefreshing(false); else setRefreshing(false); }
+  };
+
+  useEffect(() => {
+    if (!url || !role) return;
+    fetchOrders();
+    const interval = setInterval(() => fetchOrders(true), 30000); // auto-refresh silent tiap 30 detik
+    return () => clearInterval(interval);
+  }, [url, role]);
+
+  const postGAS = async (payload) => {
+    const res = await fetch(url, { method:"POST", redirect:"follow", body: JSON.stringify(payload) });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error("Response bukan JSON. Cek deployment Apps Script.\n" + text.substring(0,300)); }
+  };
+
+  const handleAdd = async fd => {
+    setSaving(true);
+    const { photo, ...orderData } = fd;
+    try {
+      // Step 1: Simpan order TANPA foto — instan
+      const data = await postGAS({ action:"add", ...orderData, photo: null });
+      if (!data.success) {
+        alert("Gagal menyimpan!\n\nDetail: " + (data.error||"Tidak ada pesan error"));
+        setSaving(false);
+        return;
+      }
+      // Step 2: Tutup modal & refresh — user langsung lihat order baru
+      await fetchOrders();
+      setShowAdd(false);
+      setSaving(false);
+      // Step 3: Upload foto di background — tidak blok UI
+      if (photo && data.orderId) {
+        postGAS({ action:"add_photo", orderId: data.orderId, photo })
+          .then(async r => { if (r.success) await fetchOrders(); })
+          .catch(() => {});
+      }
+    } catch(e) {
+      alert("Error: " + e.message);
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateStage = async (orderId, newStage) => {
+    setUpdating(true);
+    try {
+      const data = await postGAS({ action:"update_stage", orderId, newStage });
+      if (data.success) { await fetchOrders(); setSelected(null); }
+      else alert("Gagal update!\n\nDetail: " + (data.error||"Unknown error"));
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setUpdating(false); }
+  };
+
+  const handleUpdateCustomerName = async (orderId, customerName) => {
+    try {
+      const data = await postGAS({ action:"update_customer_name", orderId, customerName });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, customerName} : null);
+      } else alert("Gagal update nama: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleDeletePhoto = async (orderId, photoIndex) => {
+    if (!confirm("Hapus foto ini?")) return;
+    try {
+      const data = await postGAS({ action:"delete_photo", orderId, photoIndex });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, photoUrl: data.photoUrl} : null);
+      } else alert("Gagal hapus foto: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleUpdateUkuran = async (orderId, ukuran) => {
+    try {
+      const data = await postGAS({ action:"update_ukuran", orderId, ukuran });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, ukuran} : null);
+      } else alert("Gagal update ukuran: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleUpdateCatatan = async (orderId, catatan) => {
+    try {
+      const data = await postGAS({ action:"update_catatan", orderId, catatan });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, catatan} : null);
+      } else alert("Gagal update catatan: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleAddPhoto = async (orderId, photoB64) => {
+    try {
+      const data = await postGAS({ action:"add_photo", orderId, photo: photoB64 });
+      if (data.success) {
+        await fetchOrders();
+        setSelected(prev => prev ? {...prev, photoUrl: data.allPhotos || (prev.photoUrl ? prev.photoUrl + "|" + data.photoUrl : data.photoUrl)} : null);
+      } else alert("Gagal upload foto: " + (data.error||"Error"));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  if (!url || showSetup) return <SetupScreen onSave={u => { saveUrl(u); setShowSetup(false); }} />;
+  if (!role) return <LoginScreen onLogin={saveRole} onSetup={() => setShowSetup(true)} />;
+
+  const counts   = {};
+  STAGES.forEach(s => { counts[s.id] = orders.filter(o => normalizeStage(o.stage) === s.id).length; });
+  const searchLower = search.toLowerCase().trim();
+  const filtered = orders
+    .filter(o => filter === "all" || normalizeStage(o.stage) === filter)
+    .filter(o => !searchLower ||
+      String(o.customerName||"").toLowerCase().includes(searchLower) ||
+      String(o.jenisPakaian||"").toLowerCase().includes(searchLower) ||
+      String(o.jenisVermak||"").toLowerCase().includes(searchLower) ||
+      String(o.catatan||"").toLowerCase().includes(searchLower) ||
+      String(o.orderId||"").toLowerCase().includes(searchLower)
+    )
+    .sort((a,b) => {
+      const parseTs = v => {
+        if (!v) return 0;
+        const n = Number(v);
+        if (!isNaN(n) && n > 1000000000) return n;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      const ta = parseTs(a.createdAt), tb = parseTs(b.createdAt);
+      return sortAsc ? ta-tb : tb-ta;
+    });
+  const aktif    = orders.filter(o => normalizeStage(o.stage) !== "selesai").length;
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#f0f4f8" }}>
+      <div style={{ maxWidth:600, margin:"0 auto", position:"relative", minHeight:"100vh", background:"#f0f4f8", boxShadow:"0 0 40px rgba(0,0,0,0.08)" }}>
+
+      {/* Header */}
+      <div style={{ background: ROLES[role]?.color || "#0d6b62", color:"#fff", padding:"13px 18px",
+        position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 10px rgba(0,0,0,.2)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, letterSpacing:-.3 }}>🧵 Vermak Tracker</div>
+            <div style={{ fontSize:11, opacity:.8, marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ background:"rgba(255,255,255,.2)", padding:"1px 7px", borderRadius:10, fontWeight:700 }}>
+                {ROLES[role]?.emoji} {ROLES[role]?.label}
+              </span>
+              <span style={{ opacity:.7 }}>{aktif} aktif · {counts.selesai||0} selesai{lastSync && ` · 🔄 ${lastSync.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})}`}</span>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={fetchOrders} disabled={refreshing}
+              style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:15 }}>
+              {refreshing ? "⏳" : "🔄"}
+            </button>
+            {(role==="owner" || role==="pic_vermak" || role==="viewer") && (
+              <button onClick={() => setShowArchive(true)} title="Lihat Arsip"
+                style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+                📦
+              </button>
+            )}
+            {role==="owner" && (
+              <button onClick={() => setShowSettings(true)}
+                style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+                ⚙️
+              </button>
+            )}
+            <button onClick={() => { if(confirm("Logout dari role " + ROLES[role]?.label + "?")) saveRole(null); }}
+              style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 11px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+              🚪
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Error banner — inline, tidak popup */}
+      {fetchError && (
+        <div style={{ background:"#fef3c7", borderBottom:"1px solid #fde68a", padding:"8px 18px",
+          fontSize:13, color:"#92400e", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span>{fetchError}</span>
+          <button onClick={() => setFetchError("")} style={{ background:"none", border:"none", color:"#92400e", cursor:"pointer", fontSize:14 }}>✕</button>
+        </div>
+      )}
+
+      {/* Stage Counter Bar */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", overflowX:"auto" }}>
+        <div style={{ display:"flex", padding:"8px 16px", gap:4 }}>
+          {STAGES.map(s => (
+            <div key={s.id} style={{ flex:1, textAlign:"center", minWidth:44 }}>
+              <div style={{ fontSize:17 }}>{s.emoji}</div>
+              <div style={{ fontSize:18, fontWeight:800, color: counts[s.id]>0 ? s.color : "#e2e8f0", lineHeight:1.1 }}>
+                {counts[s.id]||0}
+              </div>
+              <div style={{ fontSize:9, color:"#94a3b8" }}>{s.short}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", overflowX:"auto" }}>
+        <div style={{ display:"flex", gap:4, padding:"8px 14px", whiteSpace:"nowrap" }}>
+          <button onClick={() => setFilter("all")} style={{ padding:"5px 14px", borderRadius:20, border:"none",
+            fontSize:12, fontWeight:600, cursor:"pointer",
+            background: filter==="all" ? "#0d6b62" : "#f1f5f9",
+            color: filter==="all" ? "#fff" : "#64748b" }}>
+            Semua ({orders.length})
+          </button>
+          {STAGES.map(s => (
+            <button key={s.id} onClick={() => setFilter(s.id)} style={{ padding:"5px 12px", borderRadius:20, border:"none",
+              fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap",
+              background: filter===s.id ? s.color : "#f1f5f9",
+              color: filter===s.id ? "#fff" : "#64748b" }}>
+              {s.emoji} {s.short} {counts[s.id]>0 ? `(${counts[s.id]})` : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search + Sort */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"10px 14px" }}>
+        <div style={{ display:"flex", gap:8 }}>
+          <div style={{ flex:1, position:"relative" }}>
+            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#94a3b8" }}>🔍</span>
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cari nama customer, jenis vermak..."
+              style={{ width:"100%", padding:"9px 36px 9px 36px", border:"1.5px solid #e2e8f0",
+                borderRadius:10, fontSize:13, outline:"none", boxSizing:"border-box",
+                background:"#f8fafc", color:"#1e293b" }}
+            />
+            {search && (
+              <button onClick={() => setSearch("")} style={{ position:"absolute", right:10, top:"50%",
+                transform:"translateY(-50%)", background:"none", border:"none", color:"#94a3b8",
+                cursor:"pointer", fontSize:16, lineHeight:1 }}>✕</button>
+            )}
+          </div>
+          <button onClick={() => setSortAsc(s => !s)} title={sortAsc ? "Terlama di atas" : "Terbaru di atas"}
+            style={{ flexShrink:0, padding:"9px 13px", border:"1.5px solid #e2e8f0", borderRadius:10,
+              background:"#f8fafc", cursor:"pointer", fontSize:14, color:"#64748b", fontWeight:600, whiteSpace:"nowrap" }}>
+            {sortAsc ? "⬆ Terlama" : "⬇ Terbaru"}
+          </button>
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ padding:"14px 14px 100px" }}>
+        {refreshing && orders.length===0 && (
+          <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>
+            <div style={{ fontWeight:600 }}>Memuat data...</div>
+          </div>
+        )}
+        {!refreshing && filtered.length===0 && (
+          <div style={{ textAlign:"center", padding:"60px 20px", color:"#94a3b8" }}>
+            <div style={{ fontSize:44, marginBottom:10 }}>{search ? "🔍" : "📭"}</div>
+            <div style={{ fontWeight:700, fontSize:15, color:"#64748b" }}>
+              {search ? `Tidak ada hasil untuk "${search}"` : "Belum ada order"}
+            </div>
+            <div style={{ fontSize:13, marginTop:5 }}>
+              {search ? "Coba kata kunci lain" : "Tap tombol + untuk tambah paket baru"}
+            </div>
+          </div>
+        )}
+        {filtered.map(o => <OrderCard key={o.orderId} order={o} onClick={setSelected} />)}
+      </div>
+
+      {/* FAB - hanya owner & PIC Vermak */}
+      {canAddOrder(role) && (
+        <button className="fab" onClick={() => setShowAdd(true)}>+</button>
+      )}
+      </div>
+
+      {showAdd   && <AddModal    onClose={()=>setShowAdd(false)}  onSubmit={handleAdd}         saving={saving}   />}
+      {selected  && <DetailModal order={selected} onClose={()=>setSelected(null)} onUpdateStage={handleUpdateStage} onUpdateCatatan={handleUpdateCatatan} onUpdateUkuran={handleUpdateUkuran} onAddPhoto={handleAddPhoto} onDeletePhoto={handleDeletePhoto} onUpdateCustomerName={handleUpdateCustomerName} updating={updating} role={role} />}
+      {showSettings && <SettingsModal onClose={()=>setShowSettings(false)} onResetUrl={() => { localStorage.removeItem("vt_url"); setUrl(""); saveRole(null); setShowSettings(false); setShowSetup(true); }} />}
+      {showArchive  && <ArchiveModal url={url} onClose={() => setShowArchive(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
