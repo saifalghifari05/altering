@@ -1288,9 +1288,7 @@ function App() {
         uploadPhoto(fd.photo, orderId).then(async url=>{
           await sb.from("orders").update({photo_url:url}).eq("order_id",orderId);
           fetchOrders(true);
-        }).catch(e=>alert("Foto gagal upload: "+e.message+"
-
-Cek policy storage Supabase."));
+        }).catch(e=>alert("Foto gagal upload: "+e.message+". Cek policy storage Supabase."));
       }
     } catch(e) { alert("Error: "+e.message); }
     finally { setSaving(false); }
