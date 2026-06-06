@@ -1320,10 +1320,16 @@ function App() {
     try {
       const {data} = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
       const photos = (data?.photo_url||"").split("|").filter(Boolean);
+      const deletedUrl = photos[photoIndex];
       photos.splice(photoIndex,1);
       const newUrl = photos.join("|");
       const {error} = await sb.from("orders").update({photo_url:newUrl,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
       if(error) throw error;
+      // Hapus file dari Storage
+      if(deletedUrl && deletedUrl.includes("/storage/v1/object/public/photos/")) {
+        const path = deletedUrl.split("/storage/v1/object/public/photos/")[1];
+        await sb.storage.from("photos").remove([path]);
+      }
       await fetchOrders(); setSelected(prev=>prev?{...prev,photoUrl:newUrl}:null);
     } catch(e) { alert("Error: "+e.message); }
   };
