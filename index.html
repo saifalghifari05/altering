@@ -120,6 +120,60 @@ function canAdvanceStage(role, stage) {
 const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Abaya","Lainnya"];
 const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Badan","Besarkan Badan","Tambah Kancing","Lainnya"];
 
+function getPhotos(photoUrl) {
+  if (!photoUrl) return [];
+  return String(photoUrl).split("|").map(s => s.trim())
+    .filter(s => s && s.startsWith("http"));
+}
+
+function getAgeDays(createdAt) {
+  if (!createdAt) return 0;
+  const d = isNaN(Number(createdAt)) ? new Date(createdAt) : new Date(Number(createdAt));
+  if (isNaN(d.getTime())) return 0;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function getAgeStyle(days) {
+  if (days >= 7)  return { bg:"#fef2f2", color:"#dc2626", text:`${days} hari ⚠️`, urgent:true };
+  if (days >= 5)  return { bg:"#fffbeb", color:"#d97706", text:`${days} hari`, urgent:false };
+  if (days >= 3)  return { bg:"#f8fafc", color:"#64748b", text:`${days} hari`, urgent:false };
+  return null;
+}
+
+function getDeadlineDate(createdAt, percepatan) {
+  if (!createdAt) return null;
+  const d = isNaN(Number(createdAt)) ? new Date(createdAt) : new Date(Number(createdAt));
+  if (isNaN(d.getTime())) return null;
+  const days = 7 - (Number(percepatan)||0);
+  return new Date(d.getTime() + days * 86400000);
+}
+
+function getDeadlineStatus(deadlineDate) {
+  if (!deadlineDate) return null;
+  const diff = deadlineDate.getTime() - Date.now();
+  const days = Math.ceil(diff / 86400000);
+  if (days < 0)  return { text:`Terlambat ${Math.abs(days)} hari`, color:"#dc2626", bg:"#fef2f2", urgent:true };
+  if (days === 0) return { text:"Hari ini!",                   color:"#ea580c", bg:"#fff7ed", urgent:false };
+  if (days <= 2) return { text:`${days} hari lagi`,            color:"#d97706", bg:"#fffbeb", urgent:false };
+  return null;
+}
+
+function formatShortDate(d) {
+  if (!d) return "-";
+  return d.toLocaleDateString("id-ID", { day:"2-digit", month:"short" });
+}
+
+
+function formatDate(ts) {
+  if (!ts) return "-";
+  const d = (ts instanceof Date) ? ts : (isNaN(Number(ts)) ? new Date(ts) : new Date(Number(ts)));
+  if (!d || isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID",
+    { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+/* ── Setup Screen ── */
+/* ── PIN Numpad ── */
 function PinModal({ roleId, onSuccess, onCancel }) {
   const role = ROLES[roleId];
   const [pin, setPin] = useState("");
@@ -190,7 +244,7 @@ function PinModal({ roleId, onSuccess, onCancel }) {
 }
 
 /* ── Login Screen ── */
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onSetup }) {
   const [pinFor, setPinFor] = useState(null);
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)",
@@ -237,95 +291,39 @@ function SettingsModal({ onClose, onResetUrl }) {
     pic_vermak: (() => { try { return localStorage.getItem("vt_pin_pic_vermak")||"1234"; } catch{return "1234";} })(),
     formulator: (() => { try { return localStorage.getItem("vt_pin_formulator")||"5678"; } catch{return "5678";} })(),
     penjahit:   (() => { try { return localStorage.getItem("vt_pin_penjahit")||"5678"; } catch{return "5678";} })(),
-    kurir:      (() => { try { return localStorage.getItem("vt_pin_kurir")||"5678"; } catch{return "5678";} })(),
+    pic_kirim:  (() => { try { return localStorage.getItem("vt_pin_pic_kirim")||"5678"; } catch{return "5678";} })(),
   });
-  const save = () => {
-    const allValid = Object.values(pins).every(p => p.length >= 4);
-    if (!allValid) { alert("Semua PIN minimal 4 angka"); return; }
-    try {
-      Object.entries(pins).forEach(([k,v]) => localStorage.setItem("vt_pin_"+k, v));
-    } catch{}
-    alert("PIN berhasil disimpan!");
-    onClose();
+  const savePin = () => {
+    if (Object.values(pins).some(p => p.length < 4)) { alert("PIN minimal 4 angka"); return; }
+    try { Object.entries(pins).forEach(([k,v]) => localStorage.setItem("vt_pin_"+k, v)); } catch{}
+    alert("PIN berhasil disimpan!"); onClose();
   };
   return (
     <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
       <div className="sheet">
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>⚙️ Pengaturan</h2>
-          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b" }}>✕</button>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>⚙️ Pengaturan PIN</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
         </div>
-        <div style={{ fontSize:13, fontWeight:700, color:"#475569", marginBottom:14 }}>Ubah PIN Login</div>
-        {[["owner","👑 Owner"],["pic_vermak","📋 PIC Vermak"],["formulator","📐 Formulator"],["penjahit","🧵 Penjahit"],["kurir","🚚 Kurir"]].map(([key,lbl]) => (
-          <div key={key} style={{ marginBottom:14 }}>
-            <label className="field-label">{lbl}</label>
-            <input className="field-input" type="number" inputMode="numeric" maxLength={6}
-              value={pins[key]} onChange={e => setPins(p => ({...p,[key]:e.target.value.slice(0,6)}))}
-              placeholder="Masukkan PIN baru" />
+        {[["owner","👑 Owner"],["pic_vermak","📋 PIC Vermak"],["formulator","📐 Formulator"],
+          ["penjahit","🧵 Penjahit"],["pic_kirim","🚚 PIC Kirim"]].map(([k,label]) => (
+          <div key={k} style={{ marginBottom:14 }}>
+            <label className="field-label">{label}</label>
+            <input type="password" value={pins[k]} onChange={e => setPins(p=>({...p,[k]:e.target.value}))}
+              style={{ width:"100%", padding:"10px 12px", border:"1.5px solid #e2e8f0", borderRadius:10,
+                fontSize:14, outline:"none", boxSizing:"border-box" }} />
           </div>
         ))}
-        <button className="btn-primary" onClick={save} style={{ marginBottom:10 }}>💾 Simpan PIN</button>
+        <button onClick={savePin} className="btn-primary" style={{ marginTop:6 }}>💾 Simpan PIN</button>
         <button onClick={onResetUrl} style={{ width:"100%", padding:12, background:"none",
-          border:"1.5px solid #fca5a5", borderRadius:10, color:"#dc2626", fontSize:13, cursor:"pointer", fontWeight:600 }}>
-          🔗 Ganti URL Apps Script
-        </button>
+          border:"1.5px solid #fca5a5", borderRadius:10, color:"#dc2626",
+          cursor:"pointer", fontSize:13, fontWeight:700, marginTop:10 }}>🚪 Logout semua pengguna</button>
       </div>
     </div>
   );
 }
 
-function SetupScreen({ onSave }) {
-  const [url, setUrl] = useState("");
-  const [guide, setGuide] = useState(false);
-  const copy = () => { navigator.clipboard.writeText(GAS_CODE).then(() => alert("Kode berhasil dicopy!")); };
 
-  return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ width:"100%", maxWidth:420 }}>
-        <div style={{ textAlign:"center", marginBottom:28, color:"#fff" }}>
-          <div style={{ fontSize:52, marginBottom:10 }}>🧵</div>
-          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>Alter Tracker</h1>
-          <p style={{ fontSize:14, opacity:.8, marginTop:6 }}>Tarda Tailor — Monitoring Alur Vermak</p>
-        </div>
-        <div style={{ background:"#fff", borderRadius:20, padding:24 }}>
-          <p style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Masukkan URL Google Apps Script:</p>
-          <input className="field-input" value={url} onChange={e => setUrl(e.target.value)}
-            placeholder="https://script.google.com/macros/s/..." style={{ marginBottom:12 }} />
-          <button className="btn-primary" onClick={() => url.trim() && onSave(url.trim())}>Mulai Tracking →</button>
-          <button onClick={() => setGuide(!guide)} style={{ width:"100%", marginTop:10, padding:"10px", background:"none",
-            border:"1.5px solid #e2e8f0", borderRadius:10, fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
-            {guide ? "▲ Tutup" : "▼ Panduan Setup Apps Script"}
-          </button>
-          {guide && (
-            <div style={{ marginTop:14 }}>
-              <div style={{ background:"#f8fafc", borderRadius:10, padding:14, fontSize:12, color:"#475569", lineHeight:1.8, marginBottom:10 }}>
-                <b>Langkah setup:</b><br/>
-                1. Buat Google Sheets baru<br/>
-                2. <b>Extensions → Apps Script</b><br/>
-                3. Hapus kode lama, paste kode di bawah<br/>
-                4. Jalankan fungsi <b>initSheet()</b> (klik Run sekali)<br/>
-                5. <b>Deploy → New deployment → Web app</b><br/>
-                &nbsp;&nbsp;&nbsp;Execute as: <b>Me</b> | Access: <b>Anyone</b><br/>
-                6. Copy URL deployment, paste di atas
-              </div>
-              <div style={{ position:"relative" }}>
-                <textarea readOnly value={GAS_CODE} rows={8} style={{ width:"100%", padding:12,
-                  background:"#1e293b", color:"#94a3b8", border:"none", borderRadius:10,
-                  fontSize:11, fontFamily:"monospace", resize:"none" }} />
-                <button onClick={copy} style={{ position:"absolute", top:8, right:8, padding:"4px 10px",
-                  background:"#0d6b62", color:"#fff", border:"none", borderRadius:6, fontSize:11, cursor:"pointer", fontWeight:600 }}>
-                  Copy
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Kanban Card ── */
 function KanbanCard({ order, onClick }) {
   const dl     = getDeadlineDate(order.createdAt, order.percepatan);
   const dlStat = getDeadlineStatus(dl);
@@ -1021,23 +1019,28 @@ function ArchiveModal({ onClose }) {
   const fetchArchive = async () => {
     setLoading(true);
     try {
-      const res  = await fetch(url + "?type=archive&t=" + Date.now());
-      const data = await res.json();
-      if (data.orders) setOrders(data.orders.reverse()); // terbaru di atas
-    } catch(e) {}
-    setLoading(false);
+      const { data, error } = await sb.from("orders").select("*")
+        .eq("archived", true).order("archived_at", {ascending:false});
+      if (error) throw error;
+      setOrders((data||[]).map(rowToOrder));
+    } catch(e) { console.log(e); }
+    finally { setLoading(false); }
   };
 
   const manualArchive = async () => {
     if (!confirm("Arsipkan semua order Selesai yang sudah lebih dari 7 hari?")) return;
     setArchiving(true);
     try {
-      const res  = await fetch(url, { method:"POST", redirect:"follow", body: JSON.stringify({ action:"manual_archive" }) });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.count > 0 ? `✅ ${data.count} order berhasil diarsipkan!` : "Tidak ada order yang perlu diarsipkan saat ini.");
-        await fetchArchive();
-      }
+      const { data:all } = await sb.from("orders").select("order_id,stage,tgl_selesai,tgl_update").eq("archived",false);
+      const ids = (all||[]).filter(o => {
+        if (o.stage !== "selesai") return false;
+        return (Date.now() - new Date(o.tgl_selesai||o.tgl_update).getTime()) > 7*86400000;
+      }).map(o => o.order_id);
+      if (!ids.length) { alert("Tidak ada order yang perlu diarsipkan saat ini."); setArchiving(false); return; }
+      const { error } = await sb.from("orders").update({ archived:true, archived_at:new Date().toISOString() }).in("order_id", ids);
+      if (error) throw error;
+      alert(`✅ ${ids.length} order berhasil diarsipkan!`);
+      await fetchArchive();
     } catch(e) { alert("Error: " + e.message); }
     setArchiving(false);
   };
@@ -1174,18 +1177,16 @@ function ArchiveModal({ onClose }) {
   );
 }
 
-
-/* ── Supabase Client ── */
+/* ── Main App ── *//* ── Supabase Client ── */
 const SUPABASE_URL = "https://cxpqrrhewvwnzhwapioz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4cHFycmhld3Z3bnpod2FwaW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MjA5NzksImV4cCI6MjA5NjI5Njk3OX0.j0SUN050pAWHDGKzSe8K04to-XpRO5Z0DC24kP5ner8";
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ── Telegram Config ── */
-const TG_BOT_TOKEN  = "";   // isi token bot Telegram
-const TG_CHAT_ID    = "";   // isi chat ID
-const TG_THREAD_ID  = "";   // isi thread ID
-
+/* ── Telegram ── */
+const TG_BOT_TOKEN = "";
+const TG_CHAT_ID   = "";
+const TG_THREAD_ID = "";
 const sendTelegram = async (text) => {
   if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
   try {
@@ -1193,249 +1194,172 @@ const sendTelegram = async (text) => {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ chat_id:TG_CHAT_ID, message_thread_id:Number(TG_THREAD_ID), text, parse_mode:"HTML" })
     });
-  } catch(e) { console.log("TG error:", e); }
+  } catch(e) { console.log("TG:", e); }
 };
-
-const notifPaketBaru = (order, deadline) => {
+const notifPaketBaru = (fd, deadline) => {
   const nl = "\n";
-  sendTelegram("🆕 <b>Paket Baru Masuk</b>" + nl+nl
-    + "👤 Customer : " + order.customerName + nl+nl
-    + "👕 Pakaian  : " + order.jenisPakaian + nl+nl
-    + "✂️ Alter    : " + order.jenisVermak  + nl+nl
-    + "📅 Masuk    : " + new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"}) + nl+nl
-    + "⏰ Deadline : " + deadline);
+  sendTelegram("🆕 <b>Paket Baru Masuk</b>"+nl+nl+"👤 Customer : "+fd.customerName+nl+nl
+    +"👕 Pakaian  : "+fd.jenisPakaian+nl+nl+"✂️ Alter    : "+fd.jenisVermak+nl+nl
+    +"📅 Masuk    : "+new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"})+nl+nl
+    +"⏰ Deadline : "+deadline);
 };
-
 const notifUpdateStage = (customerName, newStage, createdAt, percepatan) => {
   const nl = "\n";
-  const labels = { masuk:"📦 Paket Masuk", formulasi:"📐 Formulasi", dedel:"✂️ Seam Ripping",
-    jahit:"🧵 Proses Jahit", kirim:"🚚 Dikirim", selesai:"✅ Selesai" };
-  const label = labels[newStage] || newStage;
+  const labels = {masuk:"📦 Paket Masuk",formulasi:"📐 Formulasi",dedel:"✂️ Seam Ripping",
+    jahit:"🧵 Proses Jahit",kirim:"🚚 Dikirim",selesai:"✅ Selesai"};
   const waktu = new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"});
-  let deadlineStr = "-";
+  let dl = "-";
   try {
-    const tglMasuk = new Date(createdAt);
-    const days = 7 - (Number(percepatan)||0);
-    const dl = new Date(tglMasuk.getTime() + days*86400000);
-    deadlineStr = dl.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
+    const d = new Date(new Date(createdAt).getTime()+(7-(Number(percepatan)||0))*86400000);
+    dl = d.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
   } catch(e) {}
-  sendTelegram("🔄 <b>Update Status Paket</b>" + nl+nl
-    + "👤 Customer : " + customerName + nl+nl
-    + "🔄 Status   : " + label        + nl+nl
-    + "⏰ Deadline : " + deadlineStr  + nl+nl
-    + "🕐 Waktu    : " + waktu);
+  sendTelegram("🔄 <b>Update Status Paket</b>"+nl+nl+"👤 Customer : "+customerName+nl+nl
+    +"🔄 Status   : "+(labels[newStage]||newStage)+nl+nl+"⏰ Deadline : "+dl+nl+nl+"🕐 Waktu    : "+waktu);
 };
 
 /* ── Row mapper ── */
 const rowToOrder = r => ({
-  orderId:      r.order_id,
-  customerName: r.customer_name,
-  jenisPakaian: r.jenis_pakaian,
-  jenisVermak:  r.jenis_vermak,
-  catatan:      r.catatan   || "",
-  ukuran:       r.ukuran    || "",
-  stage:        r.stage     || "masuk",
-  percepatan:   r.percepatan || 0,
-  prioritas:    r.prioritas  || 0,
-  photoUrl:     r.photo_url  || "",
-  createdAt:    r.tgl_masuk,
-  updatedAt:    r.tgl_update,
-  tglFormulasi: r.tgl_formulasi,
-  tglDedel:     r.tgl_dedel,
-  tglJahit:     r.tgl_jahit,
-  tglKirim:     r.tgl_kirim,
-  tglSelesai:   r.tgl_selesai,
-  archivedAt:   r.archived_at,
+  orderId:r.order_id, customerName:r.customer_name, jenisPakaian:r.jenis_pakaian,
+  jenisVermak:r.jenis_vermak, catatan:r.catatan||"", ukuran:r.ukuran||"",
+  stage:r.stage||"masuk", percepatan:r.percepatan||0, prioritas:r.prioritas||0,
+  photoUrl:r.photo_url||"", createdAt:r.tgl_masuk, updatedAt:r.tgl_update,
+  tglFormulasi:r.tgl_formulasi, tglDedel:r.tgl_dedel, tglJahit:r.tgl_jahit,
+  tglKirim:r.tgl_kirim, tglSelesai:r.tgl_selesai, archivedAt:r.archived_at,
 });
-
-const STAGE_TS = {
-  formulasi:"tgl_formulasi", dedel:"tgl_dedel",
-  jahit:"tgl_jahit", kirim:"tgl_kirim", selesai:"tgl_selesai"
-};
-
-/* ── Photo upload helper ── */
+const STAGE_TS = {formulasi:"tgl_formulasi",dedel:"tgl_dedel",jahit:"tgl_jahit",kirim:"tgl_kirim",selesai:"tgl_selesai"};
 const uploadPhoto = async (b64, orderId) => {
-  const byteStr = atob(b64);
-  const arr = new Uint8Array(byteStr.length);
-  for (let i=0;i<byteStr.length;i++) arr[i] = byteStr.charCodeAt(i);
+  const arr = new Uint8Array(atob(b64).split("").map(c=>c.charCodeAt(0)));
   const blob = new Blob([arr], {type:"image/jpeg"});
   const path = `${orderId}/${Date.now()}.jpg`;
   const { error } = await sb.storage.from("photos").upload(path, blob, {contentType:"image/jpeg"});
   if (error) throw error;
-  const { data } = sb.storage.from("photos").getPublicUrl(path);
-  return data.publicUrl;
+  return sb.storage.from("photos").getPublicUrl(path).data.publicUrl;
 };
 
 /* ── Main App ── */
 function App() {
-  const [role,      setRole]      = useState(() => { try { return localStorage.getItem("vt_role")||null; } catch{return null;} });
-  const [orders,    setOrders]    = useState([]);
-  const [refreshing,setRefreshing]= useState(false);
-  const [showAdd,   setShowAdd]   = useState(false);
-  const [selected,  setSelected]  = useState(null);
-  const [saving,    setSaving]    = useState(false);
-  const [updating,  setUpdating]  = useState(false);
-  const [lastSync,  setLastSync]  = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showArchive,  setShowArchive]  = useState(false);
-  const [search,       setSearch]       = useState("");
-  const [fetchError,   setFetchError]   = useState("");
+  const [role,setRole]           = useState(()=>{try{return localStorage.getItem("vt_role")||null;}catch{return null;}});
+  const [orders,setOrders]       = useState([]);
+  const [refreshing,setRefreshing] = useState(false);
+  const [showAdd,setShowAdd]     = useState(false);
+  const [selected,setSelected]   = useState(null);
+  const [saving,setSaving]       = useState(false);
+  const [updating,setUpdating]   = useState(false);
+  const [lastSync,setLastSync]   = useState(null);
+  const [showSettings,setShowSettings] = useState(false);
+  const [showArchive,setShowArchive]   = useState(false);
+  const [search,setSearch]       = useState("");
+  const [fetchError,setFetchError] = useState("");
 
-  const saveRole = r => { try { if(r) localStorage.setItem("vt_role",r); else localStorage.removeItem("vt_role"); } catch{} setRole(r); };
+  const saveRole = r => {try{if(r)localStorage.setItem("vt_role",r);else localStorage.removeItem("vt_role");}catch{}setRole(r);};
 
   const fetchOrders = async (silent=false) => {
-    if (!silent) setRefreshing(true);
+    if(!silent) setRefreshing(true);
     try {
-      const { data, error } = await sb.from("orders").select("*")
-        .eq("archived", false).order("tgl_masuk", {ascending:false});
-      if (error) throw error;
+      const {data,error} = await sb.from("orders").select("*").eq("archived",false).order("tgl_masuk",{ascending:false});
+      if(error) throw error;
       setOrders(data.map(rowToOrder));
-      setLastSync(new Date());
-      setFetchError("");
-    } catch(e) {
-      if (!silent) setFetchError("⚠️ Gagal memuat data — tap 🔄 untuk coba lagi");
-    } finally {
-      setRefreshing(false);
-    }
+      setLastSync(new Date()); setFetchError("");
+    } catch(e) { if(!silent) setFetchError("⚠️ Gagal memuat data — tap 🔄 untuk coba lagi"); }
+    finally { setRefreshing(false); }
   };
 
-  useEffect(() => {
-    if (!role) return;
+  useEffect(()=>{
+    if(!role) return;
     fetchOrders();
-    const iv = setInterval(() => fetchOrders(true), 30000);
-    return () => clearInterval(iv);
-  }, [role]);
+    const iv = setInterval(()=>fetchOrders(true),30000);
+    return ()=>clearInterval(iv);
+  },[role]);
 
   const handleAdd = async fd => {
     setSaving(true);
     try {
-      const orderId = "VMK-" + Date.now();
-      const days = 7 - (Number(fd.percepatan)||0);
-      const deadline = new Date(Date.now() + days*86400000)
-        .toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
-      const { error } = await sb.from("orders").insert({
-        order_id:      orderId,
-        customer_name: fd.customerName,
-        jenis_pakaian: fd.jenisPakaian,
-        jenis_vermak:  fd.jenisVermak,
-        catatan:       fd.catatan   || "",
-        percepatan:    Number(fd.percepatan)||0,
-        stage:         "masuk",
-        photo_url:     "",
+      const orderId = "VMK-"+Date.now();
+      const days = 7-(Number(fd.percepatan)||0);
+      const deadline = new Date(Date.now()+days*86400000).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
+      const {error} = await sb.from("orders").insert({
+        order_id:orderId, customer_name:fd.customerName, jenis_pakaian:fd.jenisPakaian,
+        jenis_vermak:fd.jenisVermak, catatan:fd.catatan||"", percepatan:Number(fd.percepatan)||0, stage:"masuk", photo_url:"",
       });
-      if (error) throw error;
+      if(error) throw error;
       notifPaketBaru(fd, deadline);
-      await fetchOrders();
-      setShowAdd(false);
-      // Upload photo in background
-      if (fd.photo) {
-        uploadPhoto(fd.photo, orderId)
-          .then(async url => {
-            await sb.from("orders").update({photo_url:url}).eq("order_id",orderId);
-            fetchOrders(true);
-          }).catch(()=>{});
+      await fetchOrders(); setShowAdd(false);
+      if(fd.photo) {
+        uploadPhoto(fd.photo, orderId).then(async url=>{
+          await sb.from("orders").update({photo_url:url}).eq("order_id",orderId);
+          fetchOrders(true);
+        }).catch(()=>{});
       }
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { alert("Error: "+e.message); }
     finally { setSaving(false); }
   };
 
   const handleUpdateStage = async (orderId, newStage) => {
     setUpdating(true);
     try {
-      const updates = { stage:newStage, tgl_update:new Date().toISOString() };
-      if (STAGE_TS[newStage]) updates[STAGE_TS[newStage]] = new Date().toISOString();
-      const { error } = await sb.from("orders").update(updates).eq("order_id", orderId);
-      if (error) throw error;
-      const order = orders.find(o => o.orderId===orderId);
-      if (order) notifUpdateStage(order.customerName, newStage, order.createdAt, order.percepatan);
-      await fetchOrders();
-      setSelected(null);
-    } catch(e) { alert("Error: " + e.message); }
+      const updates = {stage:newStage, tgl_update:new Date().toISOString()};
+      if(STAGE_TS[newStage]) updates[STAGE_TS[newStage]] = new Date().toISOString();
+      const {error} = await sb.from("orders").update(updates).eq("order_id",orderId);
+      if(error) throw error;
+      const order = orders.find(o=>o.orderId===orderId);
+      if(order) notifUpdateStage(order.customerName,newStage,order.createdAt,order.percepatan);
+      await fetchOrders(); setSelected(null);
+    } catch(e) { alert("Error: "+e.message); }
     finally { setUpdating(false); }
   };
 
-  const handleUpdateCustomerName = async (orderId, customerName) => {
+  const handleUpdateCustomerName = async (orderId,customerName) => {
     try {
-      const { error } = await sb.from("orders").update({customer_name:customerName, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, customerName} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const {error} = await sb.from("orders").update({customer_name:customerName,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,customerName}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
-
-  const handleDeletePhoto = async (orderId, photoIndex) => {
-    if (!confirm("Hapus foto ini?")) return;
+  const handleDeletePhoto = async (orderId,photoIndex) => {
+    if(!confirm("Hapus foto ini?")) return;
     try {
-      const { data } = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
+      const {data} = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
       const photos = (data?.photo_url||"").split("|").filter(Boolean);
-      photos.splice(photoIndex, 1);
+      photos.splice(photoIndex,1);
       const newUrl = photos.join("|");
-      const { error } = await sb.from("orders").update({photo_url:newUrl, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, photoUrl:newUrl} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const {error} = await sb.from("orders").update({photo_url:newUrl,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,photoUrl:newUrl}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
-
-  const handleUpdatePercepatan = async (orderId, percepatan) => {
+  const handleUpdatePercepatan = async (orderId,percepatan) => {
     try {
-      const { error } = await sb.from("orders").update({percepatan:Number(percepatan), tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, percepatan} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const {error} = await sb.from("orders").update({percepatan:Number(percepatan),tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,percepatan}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
-
-  const handleUpdateUkuran = async (orderId, ukuran) => {
+  const handleUpdateUkuran = async (orderId,ukuran) => {
     try {
-      const { error } = await sb.from("orders").update({ukuran, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, ukuran} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const {error} = await sb.from("orders").update({ukuran,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,ukuran}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
-
-  const handleUpdateCatatan = async (orderId, catatan) => {
+  const handleUpdateCatatan = async (orderId,catatan) => {
     try {
-      const { error } = await sb.from("orders").update({catatan, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, catatan} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const {error} = await sb.from("orders").update({catatan,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,catatan}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
-
-  const handleAddPhoto = async (orderId, photoB64) => {
+  const handleAddPhoto = async (orderId,photoB64) => {
     try {
-      const newUrl = await uploadPhoto(photoB64, orderId);
-      const { data } = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
-      const existing = data?.photo_url || "";
-      const combined = existing ? existing+"|"+newUrl : newUrl;
-      const { error } = await sb.from("orders").update({photo_url:combined, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
-      if (error) throw error;
-      await fetchOrders();
-      setSelected(prev => prev ? {...prev, photoUrl:combined} : null);
-    } catch(e) { alert("Error: " + e.message); }
+      const newUrl = await uploadPhoto(photoB64,orderId);
+      const {data} = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
+      const combined = (data?.photo_url||"") ? (data.photo_url+"|"+newUrl) : newUrl;
+      const {error} = await sb.from("orders").update({photo_url:combined,tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if(error) throw error;
+      await fetchOrders(); setSelected(prev=>prev?{...prev,photoUrl:combined}:null);
+    } catch(e) { alert("Error: "+e.message); }
   };
 
-  const handleManualArchive = async () => {
-    try {
-      const selesaiOrders = orders.filter(o => normalizeStage(o.stage)==="selesai");
-      const oldEnough = selesaiOrders.filter(o => {
-        const finish = new Date(o.tglSelesai || o.updatedAt);
-        return (Date.now() - finish.getTime()) > 7*86400000;
-      });
-      if (oldEnough.length===0) { alert("Tidak ada order selesai yang sudah 7+ hari."); return; }
-      const ids = oldEnough.map(o => o.orderId);
-      const { error } = await sb.from("orders")
-        .update({archived:true, archived_at:new Date().toISOString()})
-        .in("order_id", ids);
-      if (error) throw error;
-      await fetchOrders();
-      alert(`${ids.length} order berhasil diarsipkan.`);
-    } catch(e) { alert("Error: " + e.message); }
-  };
-
-  if (!role) return <LoginScreen onLogin={saveRole} />;
+  if(!role) return <LoginScreen onLogin={saveRole} />;
 
   return (
     <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", background:"#f0f4f8", overflow:"hidden" }}>
