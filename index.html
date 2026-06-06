@@ -120,6 +120,76 @@ function canAdvanceStage(role, stage) {
 const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Abaya","Lainnya"];
 const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Badan","Besarkan Badan","Tambah Kancing","Lainnya"];
 
+function PinModal({ roleId, onSuccess, onCancel }) {
+  const role = ROLES[roleId];
+  const [pin, setPin] = useState("");
+  const [shake, setShake] = useState(false);
+
+  const PIN_MAX = 6;
+  const getStored = () => { try { return localStorage.getItem("vt_pin_"+roleId) || (roleId==="owner" ? "052731" : roleId==="pic_vermak" ? "1234" : "5678"); } catch{return "5678";} };
+  const tryPin = (p) => {
+    const stored = getStored();
+    if (p === stored) { onSuccess(); return; }
+    if (p.length >= PIN_MAX || p.length >= stored.length) {
+      setShake(true); setPin(""); setTimeout(() => setShake(false), 500);
+    }
+  };
+  const press = d => {
+    if (pin.length >= PIN_MAX) return;
+    const np = pin + d;
+    setPin(np);
+    const stored = getStored();
+    if (np === stored) { setTimeout(() => onSuccess(), 150); }
+    else if (np.length >= Math.max(PIN_MAX, stored.length)) { setTimeout(() => tryPin(np), 150); }
+  };
+  const del = () => setPin(p => p.slice(0,-1));
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onCancel()}>
+      <div className="sheet" style={{ textAlign:"center" }}>
+        <div style={{ fontSize:28, marginBottom:4 }}>{role.emoji}</div>
+        <div style={{ fontSize:17, fontWeight:800, color:"#1e293b", marginBottom:2 }}>{role.label}</div>
+        <div style={{ fontSize:13, color:"#94a3b8", marginBottom:20 }}>Masukkan PIN untuk login</div>
+
+        {/* PIN dots - dynamic length up to 6 */}
+        <div style={{ display:"flex", justifyContent:"center", gap:12, marginBottom:24,
+          animation: shake ? "shake .4s ease" : "none" }}>
+          {[0,1,2,3,4,5].map(i => (
+            <div key={i} style={{ width:15, height:15, borderRadius:"50%",
+              background: i < pin.length ? role.color : "#e2e8f0",
+              transition:"background .1s", opacity: i >= PIN_MAX ? 0.15 : 1 }} />
+          ))}
+        </div>
+
+        {/* Numpad */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, maxWidth:240, margin:"0 auto 16px" }}>
+          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((d,i) => (
+            <button key={i} onClick={() => d==="⌫" ? del() : d!=="" ? press(String(d)) : null}
+              style={{ padding:"16px 0", fontSize: d==="⌫" ? 18 : 20, fontWeight:700,
+                background: d==="" ? "transparent" : "#f8fafc",
+                border: d==="" ? "none" : "1.5px solid #e2e8f0",
+                borderRadius:12, cursor: d==="" ? "default" : "pointer",
+                color: d==="⌫" ? "#64748b" : "#1e293b" }}>
+              {d}
+            </button>
+          ))}
+        </div>
+        {pin.length >= 4 && (
+          <button onClick={() => tryPin(pin)} style={{ marginBottom:8, padding:"10px 32px",
+            background: ROLES[roleId]?.color || "#0d6b62", color:"#fff", border:"none",
+            borderRadius:10, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            ✓ Masuk
+          </button>
+        )}
+        <button onClick={onCancel} style={{ background:"none", border:"none", color:"#94a3b8", fontSize:13, cursor:"pointer" }}>
+          Batal
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Login Screen ── */
 function LoginScreen({ onLogin }) {
   const [pinFor, setPinFor] = useState(null);
   return (
