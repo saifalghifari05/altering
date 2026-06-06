@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Alter Tracker v2 — Tarda Tailor</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="shortcut icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAATG0lEQVR4nO1da2xcx3X+zrmzu3d3SS6p3eWb3OVbpPjQww/ScuSgiJMgrZEgsIy0RmOkTWu4SZOmRVGkdZsiCIoARYMGbR5FgAQpnCBu8iNAILRJC6SFX7KhVo5sybbepPimKJLa9+69c/pj95IrirJE+VKklP0AQcvduWfOPd/MmblnzswFKqigggoqqKCCCn4dQdutgAMigohc811XZ7ePCA276sKjhXxh0Ovz/vH8/HxtOp2GiECLBgQwlKFra2uZDT6qDPXvwWDg9NTU9IuZTHr68uJlfbN6thPbTsB6g8TjHb6a6po9lmX9jm3bv7uwMF+fTCRg2XbR4EXodWJ49QMxlEchYPoRida/XR2sOqK1/cOrycTJCxcv5G5U73Zh2whYb4DhoZFGj8fz5NKVpS9fWV4MLC8vOz/lAVgoGp0BmCgzeBk0gCwADQIg8ALwAkBtdQjR+oZ0qDb0N7a2f3D8+P/N3kiPO41tIqBoIQBoamzyNTe3PLswv/Ds5PQktLYBIMsGWdoWBhAAAMNQCNXUAgBEJGsoAwSCQGDbNkTEZGJcTVyFZeWdirJEZImIAmAarBCLxRAJR74yOXXpK9Mz0zlge0m44wQwMbRoRKNR7u7u/fSliUv/MDU9WSWiLWbOi2gWgclEqKvbhWg0mtRaPxeJ1p/M53L/s7CwcOny4uWkYRgABASCbduIRCJV4XCkbWVlpQ2QD2cz2fel0pm9K4klaFsDTFkSaBHxEqBi7fGkP+B/fG5+7hdXrlzZti5wxwgob2Wd8c5dtaG6/zr59sl9uVwWhmHkbdvWAEy/30Rne+dVEP7C8HheWF5ZPj0xMV7YbH3hXWEKVlU31VTXPJbNZb86NTVZm8mkASBvMMPW2us3/di/98DxK8tXHn3r7VOL7t7xDgLRGs9Dg8MHouH6JRR9UIYNzgGQgD8oPV19x/t39x9sbmxSG8lh5lVZRLT6z/mbeaOhAWhoaFD9/QMPdca7jpumXwCIwUaOgAwAicU6Mo888v6PlMu9Z+DcTHV1NXV3936sPtooAGxDGQUAOQDS1tKeirXFR+vq6q65cya+bWNsZMi6ujp64L4HD3fGu1NMLATkSnrY9fWNMjg4/NHbqmynwjGC3+/Ho48++m9VwSoBkDIMLgDIVAWCMjY69tOmpmZz9RrA9Ra4noyWllZzZGjvt0y/XwDkPB5vAUAmGKyS4cGRZ5RSq9fdExgZGv6iwSQAMspgG4Dd2tIqow+OHg6FQgTcma6/Xv6BA/cdbm+LCQDbozw2gEwwEJT29tjhLVXkTsC52d09fYd9Hm/R3zMXAEhzU0uis7Mrtr7sndYNAPp6+2KxtlgCgBiGUQCQCgQCMjK47/B26OYKnMFwZGjkQHN9owDIGIayAUhHvHulu6s74pTdCTfY1dkd6Yx3rgAQLvbQTHN9q8Ta4+3AztDxluEo293dU9vW1rYEIFMa6DKN0Ya5WHs8XF5uu+Ho0d4eC0fD0UUAGWeM6oh3J/p6d9eWl9vRKPpxIBQK0fCe4Z8TkTjGb21ule6u7phTbifB0efA/vsebCjO0lJKqQIRy96RfT8PhUJ0V0xPV/1+7+6Hq4NVwkQZIsr5/QEZHhp5vLzMToOjV3/fwON+MyDMlCOiTFWwRvp6dz9cXmZHwlEuFov7enp6FgDkPMrIMbHsG9l/JBAIXFNup8HRKxAIYLB/+AgziVIqByDX3dm7EI/FfeXldhwcxfaO7PuCx+MRgykDIFcfrU/EY/Ga8jI7FY5+bW3tNZFIOAEgx8wZn9eUB+4f/UJ5mR2F1YG3q9sfj3WkAOSYKeP1eGV4cPhpADcME+w0MBX1HOgbeNqjvKIMlQGQ6+jsTLW3t3sBd0lwzSpEhLq68OOzczMBJrK0FtUR60guryx/D8COWPy4FUgpTL58dfl7bS1tScu2FDPrqenJgDLUQbfrc4UAEQEzY2V55Y+y2SwAwKM8ymt6Pz9xaSK/3Ysem4GIgIgwPTOd9/vNzytWCoDOZ/M64K/6mmmaO/Neenv62mtr6mwiygEoxNpidltrewDYoX7zXeDo29jQGGiqb7YBFADkwrWRQnNjc52bdbnSA4gIVdXVjyVTSSaiPABVUx362ezcTBpw1/3ciEw3SXb0XbyymA6FQj8DoJg4n0wmVSQc+dCOGwM8Hg+Wl1Y+atkFaK0R8Ae14TX+uVAouGYYR86NyHS+d7O+QqEAj0d9w+8LaoEgb+WQzeVWo6VuwBUCmhqb/JlM6gCKC+OBQCDIszOzr7ghe73hW5pbjPXhYsMw0NLSYpSXc4uI+cvzLwcDfhaRgECsZCox2NbWHnRFOFwiIBwO9+bzuV0oZjCwz/S9mkqn3pP7WW/44cGR8O6e/ifDu8KXhoeGPwYAVFpRHdg98PHa2tpL+/fv/7NIOKLKr3uvRLDBuYZowxyKtrIKlrXL6/FG35NQt/Eb7//AlzzKI0SUAiBjY2P/eruy1htseHAosmf3wCf7uvrEq3wCQHb39r8TDkcYAJoamz39fQMFFJcZpaW5dbqvt++JSCTqeTe5m8GD94/+EMUMgJRHeeV9Y4f+8LaFrYMrPWByYkJs2wYg2mBGJpV9abM3vL7Fd3d1hw6OHfy7VCq1cObsme+/c+4dq2Dns0Skc/lcb8Dv9wJAJpOhhYUFRURai85PTU82XRwff97n813q7e77RLRExHvpEelM6r+ZGSBo27axtLLctmkhW4loOPpFIhYAK6bPJ5FwZAS4tZtdX2agf0903779f9vY1JwoySwQU4aZhYgEgOyqC9vBQJUHACLhaLAuVGcDsIkgRGQTUQaAeJRXWhpb57rbu5+MhqPed6v33XSrq60b8Xq9AmCF2ZCGaNMXb26VW4MrPWB3X//vo5g2qIgNhEIh382uWd/iBwYGog8ffPhr6XR6/le/ev1LszPTVQKdZ4MVAFP0ajaiBQK3tLaEAWBocGg/s8EA8lKUxyJiEpEuWPns1Oxk/cT0xHOGUpe6urqeHBgYiJbXeytEhEIh32ooRQTEtOuWjXMTuEJAVbCqqzTUsmEwTNO84ci73vCDA4PRg6MHv55JZeZfevmlL1wcv2BprfNEpCHwaltDtFgALBSvsQhAW2vbIADMzc4W8rl8eQ0WQJaIMACTiHTeymdn52bqxyfGn8tkMvMPjR78+vDg8C0T4fV6pUSAV4vGvuG9f3o7dtoIrkxoC4WCk7dZzM8xrufVCUc4N9zfP9AQNAN/PTs7/5mTp05BoC3DMLSIeLXWxZAACAJYgChmA3YxbRHZXA6Tk5NJAFAeNZDJpUFELCJgYqXFBor5pMohgom0bdn5CxcuqIsXxj8Xj8U/NzQw9CeWtn/41tunFsqJWD9zK89HKpVxLYbmiiDDWLO4iECvuYvrWnxfb1/jvr37vn11ZWX22PFjn5mcmbAAyRORsm3bq7UGkXMdZQ021P6h/UfGxsaOFA0BXcjnkUgkTCLCrvCuw5ZtgZm1wQYeOXToyN6hvUeYWRFR3pmq6jXXpARiXRg/b7351pv/mE6n5kdHH/p2e2luv1GPWN+dLctyw2wAXAzGXfvF9S2+p7unae/I3u8sLS3PHH/9+NNT01MWEVklg3ivkUEECLJKGebogQd/eWHywmOLi4s/KLVEnS/k0dPV83sigrPnzs4BgC22ZbDC4uUrPxifHH/s/vvu/yUzewWSvl5XUUSkRCQ/PjFuvfbqq0/ncvnlQwcPfae9LVbllHMCcxBZjZIC7obWXZFk2WstotQ7xVF+YPdAy8ieke+urKxMv/6r1z89vzBnEZHFzEogqvzGiABigohklUeZYw+MPX9x6uIHl5aWxPSZ9RBZzWadnp5CVVUVGWx0AACBWGsNAuqXlpZkcmryg4fed+g//KY/ACBLfK2PFwhA8DKzAsSam59VL7z04qfzufzSAwfGvrtvZF/LqjsSiEFGmZ7uxYJcGQPKWwQTIxgIqngsHq2pDv39wsLCUzNzMwDEAoBSy7uu1xARiAna1mm/6Q/U1tX+9tFjR3+Uz+dBRMhmsrmiLQCAcPny5aWWlhZPwAweGp8YL1ZNBI/XkyMiTE1NWSLyW4N7Br984s0Tf5nL5bJEZK7WW/pPO7M3Iohoa3Z+Rs3Oz3yqraXtUwf23//9bC7z5wHTr2Zn5+Gk1bsZXHSFAG0XfT4zm8lkAvMLCz9NpdINF8cvAoBlsIIWe0PDO2Bi2Ladrq6uCTRE6z9x9vzZ54E1V2aaJoEA0cWeZWvtzWZyyGXyxQmAFI1pFSxajelPT9vT09N/1dnZeWJ+fuFHyWQizcSBsp02qyjppYhIA6QvTV3CpalLT8VjHU/lMrm5ZCoBw2Cz+MDpHlxxQeU9wNY2Lo5faFi4PK8JbDGx0rpo/PVwUj2YWNvaTofrIoGujq4n1hsfAHL5HEQLuNSDWltaP97U2Ni4uLiQBYouhbjYi4C1hRUAOH/+/PMdsY4nwqFwQItOG6yuZ6CE4nOEVkyGImLr4vgFfebc6Qat7S1ZiHFnEMZ17kQTgQVaadHX/V5+XSmEgPbWWGBgd//h108c//Hq73LtwEdMq5IymWwhHuv4gNZiojjlLA0PZbOXsuvfOHnixz09PYeb61sCtra42NJvDC02RLQiIiYifaN7eK/YkpXyYiu6eTkisrTWXBuqS9fU1Ay/8MoLPwHWopzXC177mMtmqwsF65OZbIaJnZH/3es7euzoT9rb2z4cqg4tl3rITeeTJbe5ZRkF7qyIbXKjDRHABluiRbXUtyZN0+x489Qbbzi/b9TaNIo9SXRptWrlcs0rr778SHGrqvDaJe/OwtFjR3/e2NT0YFNTc1qKYQULtMmZzU5bEdsMiAjMhqVtrbrjPVcND8dn52Yub2ZuTUTI5/OYnpnSBLppy19/7Tun3z7NRPH29va0aFFM7N6T1SZxRwkgIhAob9u2GtozvEwKnRNTE4tEdM3T8y3JAoGJebOe2QlxTE1PLXqUp3Noz9Cy1loROL/ZnuwGtuZJeAMYhgEQ5YnI+9ADDy1r0V1nzp5ZvJ2UFWeXvBbZwGQ3N2Jp8Me58+cWianroQcPzhPgJeI8M9/RJLI7UhMRwRY7SyBvR7zjuZXkSvzkqTevMPO25dg409QTb5y4cnHiQltTffN3iMkrIlmhO6eTe8v7NwAxQ7TOeg2fGY/F/mVyZvKZdDott+N23EZ5ElYgEHi6u6tLnzt/7mnLsrLEZAIoLXNcS4ib9GxpD+Ci8dNer88c2TPyzZn5mWfS6bRsZcvfbJzGISGdTsv0zPQzQ3v2fNPn85kQyRZ3aZYLL13jIgVbRkCphWdDNaHA6OjYN946d+qziURiR7T89XBISCQScvrs2c/cd+C+b/i8pmnbdnqrB2Z3CFinIzNrEckHAkGzr6fvD44de+2zyWRStjxHlG4/DcYhIZVK4fjrxz976OFD/1QXqgto0dn1CzI7LhhX3iOJCVprHQlHvLWh2oOv/e9rLwN36EAMWafMZi9fc0d48ZUXP9fa1PozbetfrCRXLGLakvHSrRWx4oditNKKRqOqobFh7Oz5sy87Abc7NdvZINC5uevLSDh97vR/1jfUj0UjUSVarK1IMnaFACe8K1ryPp9PNTQ0PnHy5MmjwNrK0t0EhwQiwplzZ442RBueMH2mEi15ACC9wwZhZ6ASEe31eGEVCqeBuy8tvRzljcbW9mmvxwu9BbMH15+ES63npnlBdxMsy/LZWzRzc30aSgQoNu4un3MTKENJeV/e0c8BjLtgQ/Mm4YwHWwHXCbinmn4JG6z4uSbbfQLurca/Idx8Or47Nu/ew6gQsM2oELDNqBCwzagQsM2oELDNqBBwG9jRT8K/DnAzulshYJtRIWCbUSFgm1EhYJtRIWCbUSFgm+E+AffigsAWwv0lSbcF3uOouKBtxl1DAOPWXmfi3ikOdwbub9DYIh9k6ZvvzxUICpa7+3iB4t7krcotc4mA8j+25pTcW8mwIxCY3W8BxRfFbU1ekCsJp0qt5YZCGCJg5w1I+rrXPt4evF6vcX2eqawlAQhAJGCG4e5RmQRi5vITathFP+cKAas3LACzAWZOOW86dQu2ZaWAm/QuAoSQcqsHOnIMg1OrCcguwxUCnPNziEnlCll4Pb7fHB4cJqtgMZw3n9Im+ChzY0TEzKyTycQjxbOE6EbHHihba6RSqUcGB/Ycsyybizv2aeMtxDfrJMWyXDpE6iPZfBZMpHTpnGy34GoPIJDKZNM4cfLEV4OBwFfF1qu/bc4RrS15lN5xhUTi6uqBGhsUh0CUiODc2XNPhWpCT5XIwnuZFQiKxk6lkihYBbDBCrYgk07P3bbQdXCFAMMwLGZWpaMdUbDz1tJKztXNz8SkmHhjfa+1sbV8ddnduolU6QQubbDBlm0tuSXbrTPjlNa6fO+Xcku2A9Fyq0uB7tftzMB0cdZYU12z2y3Zriiay2Wf/dAHPvyVgq0tIqgtmAluC64fa8hShqGuJq4+uy0KVVBBBRVUUEEFFdwz+H+PUo53TiIpHwAAAABJRU5ErkJggg==">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; min-height: 100vh; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  /* Tampilkan scrollbar untuk area kanban */
+  .kanban-wrap::-webkit-scrollbar { height: 7px; display:block; }
+  .kanban-wrap::-webkit-scrollbar-track { background:#e2e8f0; border-radius:4px; }
+  .kanban-wrap::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:4px; }
+  .kanban-wrap::-webkit-scrollbar-thumb:hover { background:#64748b; }
+  .kanban-col-body::-webkit-scrollbar { width: 4px; display:block; }
+  .kanban-col-body::-webkit-scrollbar-track { background:#f1f5f9; }
+  .kanban-col-body::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
+  input, select, textarea, button { font-family: inherit; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 20px 18px 40px; max-height: 92vh; overflow-y: auto; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .btn-primary { width: 100%; padding: 14px; background: #0d6b62; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .field-label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+  .field-input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color .15s; background: #fff; }
+  .field-input:focus { border-color: #0d6b62; }
+  .fab { position: fixed; bottom: 24px; right: 18px; width: 56px; height: 56px; border-radius: 50%; background: #0d6b62; color: #fff; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 20px rgba(13,107,98,0.45); display: flex; align-items: center; justify-content: center; z-index: 300; line-height: 1; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+  .kanban-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:12px 14px 10px; scrollbar-width:thin; scrollbar-color:#94a3b8 #e2e8f0; flex:1; min-height:0; box-sizing:border-box; }
+  .kanban-board { display:inline-flex; gap:10px; height:100%; box-sizing:border-box; }
+  .kanban-col { width:300px; flex-shrink:0; display:flex; flex-direction:column; border-radius:12px; overflow:hidden; background:#e8edf2; border:1px solid #d1d9e0; height:100%; box-sizing:border-box; }
+  @media(min-width:640px){ .kanban-col { width:340px; } }
+  .kanban-col-hdr { padding:10px 12px; display:flex; justify-content:space-between; align-items:center; }
+  .kanban-col-hdr .hdr-title { font-size:12px; font-weight:700; }
+  .kanban-col-hdr .hdr-count { font-size:12px; font-weight:800; min-width:20px; text-align:center; }
+  .kanban-col-body { flex:1; overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:6px; min-height:0; scrollbar-width:thin; scrollbar-color:#b0bec5 #e8edf2; }
+  .kcard { background:#fff; border-radius:10px; padding:10px 11px; cursor:pointer; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,.07); transition:box-shadow .15s, transform .1s; }
+  .kcard:hover { box-shadow:0 3px 8px rgba(0,0,0,.12); transform:translateY(-1px); }
+  .kcard:active { box-shadow:0 0 0 2px #0d6b62; transform:scale(.98); }
+  .kcard-name { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kcard-dates { display:flex; flex-direction:column; gap:2px; margin-bottom:4px; }
+  .kcard-dates span { font-size:11px; color:#64748b; }
+  .kcard-badge { display:inline-flex; align-items:center; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; margin-top:3px; }
+  .kcard-accel { font-size:10px; color:#7c3aed; margin-top:3px; }
+  .kanban-empty { text-align:center; padding:20px 8px; color:#cbd5e1; font-size:12px; }
+  .order-card { background:#fff; border-radius:14px; overflow:hidden; cursor:pointer; border:1px solid #f1f5f9; box-shadow:0 1px 4px rgba(0,0,0,.05); transition:transform .15s,box-shadow .15s; }
+  .order-card:active { transform:scale(.97); }
+  .card-thumb { width:100%; height:95px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+  .card-thumb img { width:100%; height:100%; object-fit:cover; }
+  .stage-badge { position:absolute; bottom:5px; left:6px; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; white-space:nowrap; }
+  .photo-count { position:absolute; top:5px; right:5px; background:rgba(0,0,0,.5); color:#fff; font-size:10px; font-weight:700; border-radius:4px; padding:2px 5px; }
+  .card-body { padding:9px 10px 10px; }
+  .card-name { font-size:13px; font-weight:700; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
+  .card-sub { font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+  .card-date { font-size:10px; color:#94a3b8; margin-bottom:6px; }
+  .card-prog { display:flex; gap:2px; }
+  .card-prog span { flex:1; height:3px; border-radius:2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+
+const { useState, useEffect, useRef } = React;
+
+const STAGES = [
+  { id: "masuk",     label: "Paket Masuk",  short: "Masuk",   emoji: "\uD83D\uDCE6", color: "#64748b", bg: "#f1f5f9" },
+  { id: "formulasi", label: "Formulasi",    short: "Formula", emoji: "\uD83D\uDCCF", color: "#2563eb", bg: "#eff6ff" },
+  { id: "dedel",     label: "Dedel",        short: "Dedel",   emoji: "\u2702\uFE0F", color: "#ea580c", bg: "#fff7ed" },
+  { id: "jahit",     label: "Proses Jahit", short: "Jahit",   emoji: "\uD83E\uDDF5", color: "#7c3aed", bg: "#f5f3ff" },
+  { id: "kirim",     label: "Dikirim",      short: "Kirim",   emoji: "\uD83D\uDE9A", color: "#0891b2", bg: "#ecfeff" },
+  { id: "selesai",   label: "Selesai",      short: "Selesai", emoji: "\u2705",        color: "#059669", bg: "#f0fdf4" },
+];
+
+// Handle legacy stage id "cek_ukur" from old sheet data
+function normalizeStage(s) { return s === "cek_ukur" ? "formulasi" : (s||"masuk"); }
+
+const ROLES = {
+  owner:      { id:"owner",      label:"Owner",       emoji:"👑", color:"#1e3a5f", pinRequired:true  },
+  pic_vermak: { id:"pic_vermak", label:"PIC Vermak",  emoji:"📋", color:"#0d6b62", pinRequired:true  },
+  formulator: { id:"formulator", label:"Formulator",  emoji:"📐", color:"#2563eb", pinRequired:true  },
+  penjahit:   { id:"penjahit",   label:"Penjahit",    emoji:"🧵", color:"#ea580c", pinRequired:true  },
+  kurir:      { id:"kurir",      label:"Kurir",       emoji:"🚚", color:"#0891b2", pinRequired:true  },
+  viewer:     { id:"viewer",     label:"Viewer",      emoji:"👁️", color:"#64748b", pinRequired:false },
+};
+
+// Hak akses per role
+function canAddOrder(role)    { return role==="owner" || role==="pic_vermak"; }
+function canAddPhoto(role)    { return role==="owner" || role==="pic_vermak"; }
+function canEditCatatan(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur";
+  return false;
+}
+function canEditUkuran(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur";
+  return false;
+}
+function canAdvanceStage(role, stage) {
+  if (role==="owner" || role==="pic_vermak") return true;
+  if (role==="formulator") return stage==="formulasi" || stage==="cek_ukur"; // lanjut ke dedel
+  if (role==="penjahit")   return stage==="jahit";
+  if (role==="kurir")      return stage==="kirim";
+  return false;
+}
+
+const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Abaya","Lainnya"];
+const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Badan","Besarkan Badan","Tambah Kancing","Lainnya"];
+
+function LoginScreen({ onLogin }) {
+  const [pinFor, setPinFor] = useState(null);
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <div style={{ textAlign:"center", color:"#fff", marginBottom:32 }}>
+        <img src="data:image/png;base64,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" alt="Tarda" style={{ filter:"drop-shadow(0 1px 4px rgba(0,0,0,0.4))", height:80, objectFit:"contain", marginBottom:16, display:"block", margin:"0 auto 16px", mixBlendMode:"screen" }} />
+        <h1 style={{ fontSize:22, fontWeight:800, letterSpacing:-.5 }}>Alter Tracker</h1>
+        <p style={{ fontSize:13, opacity:.7, marginTop:5 }}>Tarda Tailor — Pilih role Anda</p>
+      </div>
+      <div style={{ width:"100%", maxWidth:360, display:"flex", flexDirection:"column", gap:12 }}>
+        {Object.values(ROLES).map(r => (
+          <button key={r.id} onClick={() => r.pinRequired ? setPinFor(r.id) : onLogin(r.id)}
+            style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px",
+              background:"rgba(255,255,255,.12)", border:"1.5px solid rgba(255,255,255,.2)",
+              borderRadius:12, cursor:"pointer", color:"#fff", textAlign:"left" }}>
+            <span style={{ fontSize:22 }}>{r.emoji}</span>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700 }}>{r.label}</div>
+              <div style={{ fontSize:12, opacity:.7, marginTop:1 }}>
+                {r.id==="owner"      && "Akses penuh + pengaturan"}
+                {r.id==="pic_vermak" && "Input paket & kontrol penuh"}
+                {r.id==="formulator" && "Formulasi & lanjut ke Dedel"}
+                {r.id==="penjahit"   && "Proses jahit"}
+                {r.id==="kurir"      && "Pengiriman paket ke customer"}
+                {r.id==="viewer"     && "Lihat progress saja"}
+              </div>
+            </div>
+            {r.pinRequired && <span style={{ marginLeft:"auto", fontSize:14, opacity:.6 }}>🔒</span>}
+          </button>
+        ))}
+      </div>
+
+
+
+      {pinFor && <PinModal roleId={pinFor} onSuccess={() => { onLogin(pinFor); setPinFor(null); }} onCancel={() => setPinFor(null)} />}
+    </div>
+  );
+}
+
+/* ── Settings Modal (Owner only) ── */
+function SettingsModal({ onClose, onResetUrl }) {
+  const [pins, setPins] = useState({
+    owner:      (() => { try { return localStorage.getItem("vt_pin_owner")||"052731"; } catch{return "052731";} })(),
+    pic_vermak: (() => { try { return localStorage.getItem("vt_pin_pic_vermak")||"1234"; } catch{return "1234";} })(),
+    formulator: (() => { try { return localStorage.getItem("vt_pin_formulator")||"5678"; } catch{return "5678";} })(),
+    penjahit:   (() => { try { return localStorage.getItem("vt_pin_penjahit")||"5678"; } catch{return "5678";} })(),
+    kurir:      (() => { try { return localStorage.getItem("vt_pin_kurir")||"5678"; } catch{return "5678";} })(),
+  });
+  const save = () => {
+    const allValid = Object.values(pins).every(p => p.length >= 4);
+    if (!allValid) { alert("Semua PIN minimal 4 angka"); return; }
+    try {
+      Object.entries(pins).forEach(([k,v]) => localStorage.setItem("vt_pin_"+k, v));
+    } catch{}
+    alert("PIN berhasil disimpan!");
+    onClose();
+  };
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>⚙️ Pengaturan</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b" }}>✕</button>
+        </div>
+        <div style={{ fontSize:13, fontWeight:700, color:"#475569", marginBottom:14 }}>Ubah PIN Login</div>
+        {[["owner","👑 Owner"],["pic_vermak","📋 PIC Vermak"],["formulator","📐 Formulator"],["penjahit","🧵 Penjahit"],["kurir","🚚 Kurir"]].map(([key,lbl]) => (
+          <div key={key} style={{ marginBottom:14 }}>
+            <label className="field-label">{lbl}</label>
+            <input className="field-input" type="number" inputMode="numeric" maxLength={6}
+              value={pins[key]} onChange={e => setPins(p => ({...p,[key]:e.target.value.slice(0,6)}))}
+              placeholder="Masukkan PIN baru" />
+          </div>
+        ))}
+        <button className="btn-primary" onClick={save} style={{ marginBottom:10 }}>💾 Simpan PIN</button>
+        <button onClick={onResetUrl} style={{ width:"100%", padding:12, background:"none",
+          border:"1.5px solid #fca5a5", borderRadius:10, color:"#dc2626", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+          🔗 Ganti URL Apps Script
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SetupScreen({ onSave }) {
+  const [url, setUrl] = useState("");
+  const [guide, setGuide] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(GAS_CODE).then(() => alert("Kode berhasil dicopy!")); };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(155deg,#0d6b62,#0a4a43)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ width:"100%", maxWidth:420 }}>
+        <div style={{ textAlign:"center", marginBottom:28, color:"#fff" }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>🧵</div>
+          <h1 style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>Alter Tracker</h1>
+          <p style={{ fontSize:14, opacity:.8, marginTop:6 }}>Tarda Tailor — Monitoring Alur Vermak</p>
+        </div>
+        <div style={{ background:"#fff", borderRadius:20, padding:24 }}>
+          <p style={{ fontSize:13, color:"#64748b", marginBottom:12 }}>Masukkan URL Google Apps Script:</p>
+          <input className="field-input" value={url} onChange={e => setUrl(e.target.value)}
+            placeholder="https://script.google.com/macros/s/..." style={{ marginBottom:12 }} />
+          <button className="btn-primary" onClick={() => url.trim() && onSave(url.trim())}>Mulai Tracking →</button>
+          <button onClick={() => setGuide(!guide)} style={{ width:"100%", marginTop:10, padding:"10px", background:"none",
+            border:"1.5px solid #e2e8f0", borderRadius:10, fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+            {guide ? "▲ Tutup" : "▼ Panduan Setup Apps Script"}
+          </button>
+          {guide && (
+            <div style={{ marginTop:14 }}>
+              <div style={{ background:"#f8fafc", borderRadius:10, padding:14, fontSize:12, color:"#475569", lineHeight:1.8, marginBottom:10 }}>
+                <b>Langkah setup:</b><br/>
+                1. Buat Google Sheets baru<br/>
+                2. <b>Extensions → Apps Script</b><br/>
+                3. Hapus kode lama, paste kode di bawah<br/>
+                4. Jalankan fungsi <b>initSheet()</b> (klik Run sekali)<br/>
+                5. <b>Deploy → New deployment → Web app</b><br/>
+                &nbsp;&nbsp;&nbsp;Execute as: <b>Me</b> | Access: <b>Anyone</b><br/>
+                6. Copy URL deployment, paste di atas
+              </div>
+              <div style={{ position:"relative" }}>
+                <textarea readOnly value={GAS_CODE} rows={8} style={{ width:"100%", padding:12,
+                  background:"#1e293b", color:"#94a3b8", border:"none", borderRadius:10,
+                  fontSize:11, fontFamily:"monospace", resize:"none" }} />
+                <button onClick={copy} style={{ position:"absolute", top:8, right:8, padding:"4px 10px",
+                  background:"#0d6b62", color:"#fff", border:"none", borderRadius:6, fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                  Copy
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Kanban Card ── */
+function KanbanCard({ order, onClick }) {
+  const dl     = getDeadlineDate(order.createdAt, order.percepatan);
+  const dlStat = getDeadlineStatus(dl);
+  const created = (() => {
+    if (!order.createdAt) return null;
+    return isNaN(Number(order.createdAt)) ? new Date(order.createdAt) : new Date(Number(order.createdAt));
+  })();
+  return (
+    <div className="kcard" onClick={() => onClick(order)}>
+      <div className="kcard-name">{order.customerName}</div>
+      <div className="kcard-dates">
+        <span>📅 Masuk: {formatShortDate(created)}</span>
+        <span style={{ color: dlStat ? dlStat.color : "#64748b", fontWeight: dlStat ? 700 : 400 }}>
+          ⏰ Deadline: {formatShortDate(dl)}
+        </span>
+      </div>
+      {dlStat && (
+        <span className="kcard-badge" style={{ background:dlStat.bg, color:dlStat.color }}>
+          {dlStat.urgent ? "🔴" : "🟡"} {dlStat.text}
+        </span>
+      )}
+      {order.percepatan > 0 && (
+        <div className="kcard-accel">⚡ Percepatan {order.percepatan} hari</div>
+      )}
+    </div>
+  );
+}
+
+/* ── Kanban Board ── */
+function KanbanBoard({ orders, onCardClick, search }) {
+  const q = (search||"").toLowerCase();
+  const filtered = q ? orders.filter(o =>
+    (o.customerName||"").toLowerCase().includes(q) ||
+    (o.jenisVermak||"").toLowerCase().includes(q) ||
+    (o.jenisPakaian||"").toLowerCase().includes(q) ||
+    (o.catatan||"").toLowerCase().includes(q)
+  ) : orders;
+
+  return (
+    <div className="kanban-wrap">
+      <div className="kanban-board">
+        {STAGES.map(stage => {
+          const cols = filtered.filter(o => normalizeStage(o.stage) === stage.id)
+            .sort((a,b) => {
+              const da = getDeadlineDate(a.createdAt, a.percepatan);
+              const db = getDeadlineDate(b.createdAt, b.percepatan);
+              if (!da || !db) return 0;
+              return da.getTime() - db.getTime(); // deadline terdekat di atas
+            });
+          return (
+            <div key={stage.id} className="kanban-col">
+              <div className="kanban-col-hdr" style={{ background: stage.color+"22" }}>
+                <span className="hdr-title" style={{ color:stage.color }}>
+                  {stage.emoji} {stage.label}
+                </span>
+                <span className="hdr-count" style={{ background:stage.color+"22", color:stage.color, borderRadius:20, padding:"1px 8px" }}>
+                  {cols.length}
+                </span>
+              </div>
+              <div className="kanban-col-body">
+                {cols.length === 0
+                  ? <div className="kanban-empty">— kosong —</div>
+                  : cols.map(o => <KanbanCard key={o.orderId} order={o} onClick={onCardClick} />)
+                }
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Add Modal ── */
+function AddModal({ onClose, onSubmit, saving }) {
+  const [form, setForm] = useState({ customerName:"", jenisPakaian:"Gamis", jenisVermak:"Potong Panjang", catatan:"", percepatan:0 });
+  const [photoB64, setPhotoB64]   = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const fileRef    = useRef();
+  const galleryRef = useRef();
+  const set = (k,v) => setForm(p => ({...p,[k]:v}));
+
+  const handlePhoto = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 800; // lebih kecil = upload lebih cepat
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const dataUrl = canvas.toDataURL("image/jpeg",.65); // quality lebih rendah = file lebih kecil
+      setPreview(dataUrl);
+      setPhotoB64(dataUrl.split(",")[1]);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submit = () => {
+    if (!form.customerName.trim()) { alert("Nama customer wajib diisi!"); return; }
+    onSubmit({ ...form, photo: photoB64 });
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>📦 Paket Baru</h2>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        <div style={{ marginBottom:16 }}>
+          <label className="field-label">Foto Paket</label>
+          {/* Input kamera — pakai capture=environment supaya langsung buka kamera */}
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display:"none" }} />
+          {/* Input galeri — tanpa capture supaya buka file picker */}
+          <input ref={galleryRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display:"none" }} />
+          {preview ? (
+            <div style={{ position:"relative" }}>
+              <img src={preview} alt="" style={{ width:"100%", height:190, objectFit:"cover", borderRadius:12, border:"1.5px solid #e2e8f0" }} />
+              <button onClick={() => { setPhotoB64(null); setPreview(null); fileRef.current.value=""; galleryRef.current.value=""; }}
+                style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,.55)", color:"#fff",
+                  border:"none", borderRadius:20, padding:"4px 10px", cursor:"pointer", fontSize:12 }}>Ganti</button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div onClick={() => fileRef.current.click()} style={{ border:"2px dashed #cbd5e1", borderRadius:12,
+                padding:"18px 10px", textAlign:"center", cursor:"pointer", background:"#f8fafc", color:"#64748b" }}>
+                <div style={{ fontSize:26, marginBottom:5 }}>📷</div>
+                <div style={{ fontSize:12, fontWeight:700 }}>Buka Kamera</div>
+              </div>
+              <div onClick={() => galleryRef.current.click()} style={{ border:"2px dashed #cbd5e1", borderRadius:12,
+                padding:"18px 10px", textAlign:"center", cursor:"pointer", background:"#f8fafc", color:"#64748b" }}>
+                <div style={{ fontSize:26, marginBottom:5 }}>🖼️</div>
+                <div style={{ fontSize:12, fontWeight:700 }}>Pilih Galeri</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label className="field-label">Nama Customer *</label>
+          <input className="field-input" value={form.customerName} onChange={e => set("customerName",e.target.value)} placeholder="Contoh: Bu Siti" />
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+          <div>
+            <label className="field-label">Jenis Pakaian</label>
+            <select className="field-input" value={form.jenisPakaian} onChange={e => set("jenisPakaian",e.target.value)}>
+              {JENIS_PAKAIAN.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Jenis Alter</label>
+            <select className="field-input" value={form.jenisVermak} onChange={e => set("jenisVermak",e.target.value)}>
+              {JENIS_VERMAK.map(j => <option key={j}>{j}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label className="field-label">Catatan (opsional)</label>
+          <textarea className="field-input" value={form.catatan} onChange={e => set("catatan",e.target.value)}
+            rows={3} placeholder="Detail tambahan tentang vermak..." style={{ resize:"none" }} />
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <label className="field-label">Percepatan Deadline (hari)</label>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <input className="field-input" type="number" min="0" max="6" value={form.percepatan}
+              onChange={e => set("percepatan", Math.min(6, Math.max(0, Number(e.target.value)||0)))}
+              style={{ width:72, textAlign:"center" }} />
+            <span style={{ fontSize:12, color:"#64748b", flex:1 }}>
+              {form.percepatan > 0 ? `Deadline dipercepat ${form.percepatan} hari` : "0 = deadline normal +7 hari"}
+            </span>
+          </div>
+        </div>
+
+        <button className="btn-primary" onClick={submit} disabled={saving}>
+          {saving ? "⏳ Menyimpan..." : "✓ Simpan Paket"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Photo Lightbox ── */
+function PhotoLightbox({ photos, startIndex, onClose }) {
+  const [idx,   setIdx]   = useState(startIndex || 0);
+  const [scale, setScale] = useState(1);
+  const [pos,   setPos]   = useState({ x:0, y:0 });
+  const wrapRef  = useRef();
+  const lastTap  = useRef(0);
+  const pinchRef = useRef(null);
+  const panRef   = useRef(null);
+  const rafRef   = useRef(null);
+
+  const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+  const resetZoom = () => { setScale(1); setPos({ x:0, y:0 }); };
+  const goTo = (n) => { setIdx(n); resetZoom(); };
+
+  // Apply transform via RAF to avoid excessive re-renders
+  const pendingTransform = useRef({ scale:1, x:0, y:0 });
+  const [, forceRender] = useState(0);
+  const flushTransform = () => {
+    setScale(pendingTransform.current.scale);
+    setPos({ x: pendingTransform.current.x, y: pendingTransform.current.y });
+  };
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+
+    const getScale = () => pendingTransform.current.scale;
+
+    const onStart = (e) => {
+      if (e.touches.length === 2) {
+        const t = e.touches;
+        pinchRef.current = {
+          dist:  Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY),
+          scale: pendingTransform.current.scale,
+        };
+        panRef.current = null;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTap.current < 280) {
+          // double tap
+          if (pendingTransform.current.scale > 1) {
+            pendingTransform.current = { scale:1, x:0, y:0 };
+          } else {
+            pendingTransform.current = { scale:2.5, x:0, y:0 };
+          }
+          flushTransform();
+          lastTap.current = 0;
+          return;
+        }
+        lastTap.current = now;
+        pinchRef.current = null;
+        panRef.current = {
+          sx: e.touches[0].clientX,
+          sy: e.touches[0].clientY,
+          px: pendingTransform.current.x,
+          py: pendingTransform.current.y,
+        };
+      }
+    };
+
+    const onMove = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2 && pinchRef.current) {
+        const t = e.touches;
+        const dist = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+        const newScale = clamp(pinchRef.current.scale * (dist / pinchRef.current.dist), 1, 6);
+        pendingTransform.current.scale = newScale;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(flushTransform);
+      } else if (e.touches.length === 1 && panRef.current && pendingTransform.current.scale > 1) {
+        const s   = pendingTransform.current.scale;
+        const dx  = e.touches[0].clientX - panRef.current.sx;
+        const dy  = e.touches[0].clientY - panRef.current.sy;
+        const maxX = (s-1) * (el.offsetWidth  / 2);
+        const maxY = (s-1) * (el.offsetHeight / 2);
+        pendingTransform.current.x = clamp(panRef.current.px + dx, -maxX, maxX);
+        pendingTransform.current.y = clamp(panRef.current.py + dy, -maxY, maxY);
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(flushTransform);
+      }
+    };
+
+    const onEnd = () => {
+      pinchRef.current = null;
+      panRef.current   = null;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      flushTransform();
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: false });
+    el.addEventListener("touchmove",  onMove,  { passive: false });
+    el.addEventListener("touchend",   onEnd);
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove",  onMove);
+      el.removeEventListener("touchend",   onEnd);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [idx]);
+
+  // Sync pendingTransform ref with state
+  useEffect(() => {
+    pendingTransform.current = { scale, x: pos.x, y: pos.y };
+  }, [scale, pos]);
+
+  const imgStyle = {
+    maxWidth: "100%", maxHeight: "82vh", objectFit: "contain",
+    transform: `scale(${scale}) translate(${pos.x/scale}px, ${pos.y/scale}px)`,
+    transition: pinchRef.current || panRef.current ? "none" : "transform .2s ease",
+    userSelect: "none", touchAction: "none", display: "block",
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.95)", zIndex:1000,
+      display:"flex", flexDirection:"column" }}>
+
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+        padding:"13px 16px", background:"rgba(0,0,0,.35)", flexShrink:0 }}>
+        <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>
+          {idx===0 ? "📦 Foto Paket" : `📷 Foto ${idx+1}`}
+          <span style={{ opacity:.45, marginLeft:8 }}>{idx+1}/{photos.length}</span>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          {scale > 1 && (
+            <button onClick={resetZoom} style={{ background:"rgba(255,255,255,.15)", border:"none",
+              borderRadius:8, padding:"5px 12px", color:"#fff", cursor:"pointer", fontSize:12 }}>
+              Reset
+            </button>
+          )}
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,.15)", border:"none",
+            borderRadius:8, padding:"5px 14px", color:"#fff", cursor:"pointer", fontSize:18 }}>✕</button>
+        </div>
+      </div>
+
+      <div ref={wrapRef} style={{ flex:1, display:"flex", alignItems:"center",
+        justifyContent:"center", overflow:"hidden", touchAction:"none" }}>
+        <img src={photos[idx]} alt="" style={imgStyle} draggable={false} />
+      </div>
+
+      {photos.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", alignItems:"center",
+          gap:12, padding:"14px 0", flexShrink:0 }}>
+          <button onClick={() => goTo((idx-1+photos.length)%photos.length)}
+            style={{ background:"rgba(255,255,255,.18)", border:"none", borderRadius:"50%",
+              width:42, height:42, color:"#fff", fontSize:22, cursor:"pointer" }}>‹</button>
+          <div style={{ display:"flex", gap:6 }}>
+            {photos.map((_,i) => (
+              <div key={i} onClick={() => goTo(i)} style={{ width:7, height:7, borderRadius:"50%",
+                background: i===idx ? "#fff" : "rgba(255,255,255,.3)", cursor:"pointer" }} />
+            ))}
+          </div>
+          <button onClick={() => goTo((idx+1)%photos.length)}
+            style={{ background:"rgba(255,255,255,.18)", border:"none", borderRadius:"50%",
+              width:42, height:42, color:"#fff", fontSize:22, cursor:"pointer" }}>›</button>
+        </div>
+      )}
+      <div style={{ textAlign:"center", paddingBottom:10, color:"rgba(255,255,255,.3)", fontSize:10 }}>
+        Double tap · Pinch zoom · Geser untuk pan
+      </div>
+    </div>
+  );
+}
+
+/* ── Detail Modal ── */
+function DetailModal({ order, onClose, onUpdateStage, onUpdateCatatan, onUpdateUkuran, onUpdatePercepatan, onAddPhoto, onDeletePhoto, onUpdateCustomerName, updating, role }) {
+  const idx   = STAGES.findIndex(s => s.id === normalizeStage(order.stage));
+  const next  = STAGES[idx+1];
+  const [lightbox, setLightbox] = useState(null); // { photos, startIndex }
+  const [perceptVal,     setPerceptVal]     = useState(Number(order.percepatan)||0);
+  const [perceptDirty,   setPerceptDirty]   = useState(false);
+  const [savingPercept,  setSavingPercept]  = useState(false);
+  const savePercepatan = async () => {
+    setSavingPercept(true);
+    await onUpdatePercepatan(order.orderId, perceptVal);
+    setSavingPercept(false);
+    setPerceptDirty(false);
+  };
+  const [editingName,    setEditingName]    = useState(false);
+  const [nameVal,        setNameVal]        = useState(order.customerName || "");
+  const [savingName,     setSavingName]     = useState(false);
+  const [editingCatatan, setEditingCatatan] = useState(false);
+
+  const submitName = async () => {
+    if (!nameVal.trim()) return;
+    setSavingName(true);
+    await onUpdateCustomerName(order.orderId, nameVal.trim());
+    setSavingName(false);
+    setEditingName(false);
+  };
+  const [catatanVal, setCatatanVal]         = useState(order.catatan || "");
+  const [savingCatatan, setSavingCatatan]   = useState(false);
+  const [editingUkuran, setEditingUkuran]   = useState(false);
+  const [ukuranVal, setUkuranVal]           = useState(order.ukuran || "");
+  const [savingUkuran, setSavingUkuran]     = useState(false);
+
+  const submitUkuran = async () => {
+    setSavingUkuran(true);
+    await onUpdateUkuran(order.orderId, ukuranVal);
+    setSavingUkuran(false);
+    setEditingUkuran(false);
+  };
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const addPhotoRef   = useRef();
+  const addGalleryRef = useRef();
+
+  const handleAddPhotoFile = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) { if (w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const b64 = canvas.toDataURL("image/jpeg",.65).split(",")[1];
+      setUploadingPhoto(true);
+      await onAddPhoto(order.orderId, b64);
+      setUploadingPhoto(false);
+      addPhotoRef.current.value = "";
+      if (addGalleryRef.current) addGalleryRef.current.value = "";
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
+  const submitCatatan = async () => {
+    setSavingCatatan(true);
+    await onUpdateCatatan(order.orderId, catatanVal);
+    setSavingCatatan(false);
+    setEditingCatatan(false);
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="sheet">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div style={{ flex:1 }}>
+            {editingName ? (
+              <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                <input className="field-input" value={nameVal} onChange={e=>setNameVal(e.target.value)}
+                  autoFocus style={{ fontSize:16, fontWeight:700, padding:"6px 10px", flex:1 }}
+                  onKeyDown={e => e.key==="Enter" && submitName()} />
+                <button onClick={submitName} disabled={savingName} style={{ background:"#0d6b62", color:"#fff",
+                  border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
+                  {savingName ? "..." : "✓"}
+                </button>
+                <button onClick={() => { setEditingName(false); setNameVal(order.customerName||""); }}
+                  style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 10px", cursor:"pointer", color:"#64748b" }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>{order.customerName}</h2>
+                {(role==="owner" || role==="pic_vermak") && (
+                  <button onClick={() => setEditingName(true)} style={{ background:"none", border:"none",
+                    color:"#94a3b8", cursor:"pointer", fontSize:14 }}>✏️</button>
+                )}
+              </div>
+            )}
+            <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{order.orderId}</div>
+          </div>
+          <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+        </div>
+
+        {/* Photo Gallery */}
+        {(() => {
+          const photos = getPhotos(order.photoUrl);
+          return (
+            <div style={{ marginBottom:14 }}>
+              {photos.length > 0 && (
+                <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:8 }}>
+                  {photos.map((url, i) => (
+                    <div key={i} style={{ position:"relative", flexShrink:0 }}>
+                      <img src={url} alt={`foto ${i+1}`} onClick={() => setLightbox({ photos, startIndex:i })}
+                        style={{ width: photos.length===1 ? "100%" : 130,
+                        height: photos.length===1 ? 200 : 130, objectFit:"cover",
+                        borderRadius:12, border:"1.5px solid #f1f5f9", display:"block",
+                        minWidth: photos.length===1 ? "100%" : 130, cursor:"zoom-in" }} />
+                      <div style={{ position:"absolute", bottom:5, left:6, background:"rgba(0,0,0,.5)",
+                        color:"#fff", fontSize:10, fontWeight:700, borderRadius:4, padding:"2px 6px" }}>
+                        {i===0 ? "Paket" : `Foto ${i+1}`}
+                      </div>
+                      <div style={{ position:"absolute", top:5, right:5, display:"flex", gap:4 }}>
+                        <div onClick={() => setLightbox({ photos, startIndex:i })} style={{ background:"rgba(0,0,0,.45)",
+                          color:"#fff", fontSize:11, borderRadius:4, padding:"2px 5px", cursor:"zoom-in" }}>🔍</div>
+                        {canAddPhoto(role) && (
+                          <div onClick={e => { e.stopPropagation(); onDeletePhoto(order.orderId, i); }}
+                            style={{ background:"rgba(220,38,38,.75)", color:"#fff", fontSize:11,
+                              borderRadius:4, padding:"2px 5px", cursor:"pointer" }}>✕</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Tambah Foto Button */}
+              <div>
+                <input ref={addPhotoRef}   type="file" accept="image/*" capture="environment" onChange={handleAddPhotoFile} style={{ display:"none" }} />
+              <input ref={addGalleryRef} type="file" accept="image/*" onChange={handleAddPhotoFile} style={{ display:"none" }} />
+                {canAddPhoto(role) && (
+                  uploadingPhoto ? (
+                    <div style={{ padding:"10px", textAlign:"center", background:"#f1f5f9", borderRadius:10,
+                      fontSize:13, color:"#94a3b8", fontWeight:600 }}>⏳ Mengupload foto...</div>
+                  ) : (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      <button onClick={() => addPhotoRef.current.click()}
+                        style={{ padding:"10px", background:"#f0fdf4", border:"1.5px dashed #059669",
+                          borderRadius:10, fontSize:12, color:"#059669", cursor:"pointer", fontWeight:700 }}>
+                        📷 Kamera
+                      </button>
+                      <button onClick={() => addGalleryRef.current.click()}
+                        style={{ padding:"10px", background:"#f0fdf4", border:"1.5px dashed #059669",
+                          borderRadius:10, fontSize:12, color:"#059669", cursor:"pointer", fontWeight:700 }}>
+                        🖼️ Galeri
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            {[["Jenis Pakaian",order.jenisPakaian],["Jenis Vermak",order.jenisVermak],
+              ["Tanggal Masuk",formatDate(order.createdAt)],["Terakhir Update",formatDate(order.updatedAt)]
+            ].map(([lbl,val]) => (
+              <div key={lbl}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{lbl}</div>
+                <div style={{ fontSize:13, color:"#1e293b", fontWeight:600, marginTop:3 }}>{val||"-"}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Catatan dengan tombol edit */}
+          <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Catatan Vermak</div>
+              {!editingCatatan && canEditCatatan(role, order.stage) && (
+                <button onClick={() => setEditingCatatan(true)} style={{ background:"none", border:"1px solid #e2e8f0",
+                  borderRadius:6, padding:"3px 10px", fontSize:11, color:"#0d6b62", cursor:"pointer", fontWeight:600 }}>
+                  ✏️ {order.catatan ? "Edit" : "Tambah Catatan"}
+                </button>
+              )}
+            </div>
+            {editingCatatan ? (
+              <div>
+                <textarea className="field-input" value={catatanVal} onChange={e => setCatatanVal(e.target.value)}
+                  rows={3} placeholder="Tulis detail vermak yang dibutuhkan..." autoFocus
+                  style={{ resize:"none", fontSize:13, marginBottom:8 }} />
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={submitCatatan} disabled={savingCatatan} style={{ flex:1, padding:"9px",
+                    background: savingCatatan ? "#94a3b8" : "#0d6b62", color:"#fff", border:"none",
+                    borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    {savingCatatan ? "⏳ Menyimpan..." : "✓ Simpan"}
+                  </button>
+                  <button onClick={() => { setEditingCatatan(false); setCatatanVal(order.catatan||""); }}
+                    style={{ padding:"9px 16px", background:"#f1f5f9", border:"none", borderRadius:8,
+                      fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+                    Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize:13, color: order.catatan ? "#1e293b" : "#94a3b8", fontStyle: order.catatan ? "normal" : "italic", whiteSpace:"pre-wrap", lineHeight:1.6 }}>
+                {order.catatan || "Belum ada catatan — tap Edit untuk menambahkan"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Percepatan Section */}
+        {(role==="owner" || role==="pic_vermak") && (
+          <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Percepatan Deadline</div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <input type="number" min="0" max="6" value={perceptVal}
+                onChange={e => { setPerceptVal(Math.min(6, Math.max(0, Number(e.target.value)||0))); setPerceptDirty(true); }}
+                className="field-input" style={{ width:70, textAlign:"center", padding:"7px" }} />
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, color:"#475569" }}>hari percepatan</div>
+                <div style={{ fontSize:11, color:"#0d6b62", fontWeight:600, marginTop:2 }}>
+                  Deadline: {formatShortDate(getDeadlineDate(order.createdAt, perceptVal))}
+                  {perceptVal > 0 && ` (dipercepat ${perceptVal} hari)`}
+                </div>
+              </div>
+              {perceptDirty && (
+                <button onClick={savePercepatan} disabled={savingPercept} style={{ padding:"7px 14px",
+                  background:"#0d6b62", color:"#fff", border:"none", borderRadius:8, fontSize:12,
+                  fontWeight:700, cursor:"pointer" }}>
+                  {savingPercept ? "..." : "Simpan"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Ukuran Section */}
+        <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+            <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Ukuran</div>
+            {!editingUkuran && canEditUkuran(role, order.stage) && (
+              <button onClick={() => setEditingUkuran(true)} style={{ background:"none", border:"1px solid #e2e8f0",
+                borderRadius:6, padding:"3px 10px", fontSize:11, color:"#2563eb", cursor:"pointer", fontWeight:600 }}>
+                📐 {order.ukuran ? "Edit" : "Isi Ukuran"}
+              </button>
+            )}
+          </div>
+          {editingUkuran ? (
+            <div>
+              <textarea className="field-input" value={ukuranVal} onChange={e => setUkuranVal(e.target.value)}
+                rows={4} autoFocus placeholder={"Contoh:\nPanjang baju: 140cm\nLingkar dada: 110cm\nLingkar pinggang: 95cm"}
+                style={{ resize:"none", fontSize:13, marginBottom:8, fontFamily:"monospace" }} />
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={submitUkuran} disabled={savingUkuran} style={{ flex:1, padding:"9px",
+                  background: savingUkuran ? "#94a3b8" : "#2563eb", color:"#fff", border:"none",
+                  borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  {savingUkuran ? "⏳ Menyimpan..." : "✓ Simpan Ukuran"}
+                </button>
+                <button onClick={() => { setEditingUkuran(false); setUkuranVal(order.ukuran||""); }}
+                  style={{ padding:"9px 16px", background:"#f1f5f9", border:"none", borderRadius:8,
+                    fontSize:13, color:"#64748b", cursor:"pointer", fontWeight:600 }}>
+                  Batal
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize:13, whiteSpace:"pre-wrap", fontFamily: order.ukuran ? "monospace" : "inherit",
+              color: order.ukuran ? "#1e293b" : "#94a3b8", fontStyle: order.ukuran ? "normal" : "italic", lineHeight:1.7 }}>
+              {order.ukuran || "Belum diisi — formulator mengisi setelah cek & ukur"}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:.5, marginBottom:12 }}>Progress Tahapan</div>
+          {STAGES.map((s,i) => {
+            const done   = i < idx;
+            const active = i === idx;
+            return (
+              <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                <div style={{
+                  width:34, height:34, borderRadius:"50%", flexShrink:0, fontSize: active?16:13,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  background: active ? s.color : done ? s.bg : "#f1f5f9",
+                  border: active ? "none" : done ? `2px solid ${s.color}` : "1.5px solid #e2e8f0",
+                  color: active ? "#fff" : done ? s.color : "#cbd5e1", fontWeight:700,
+                }}>
+                  {done ? "✓" : s.emoji}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight: active?700:500, color: active?"#1e293b": i>idx?"#94a3b8":"#64748b" }}>
+                    {s.label}
+                  </div>
+                  {active && <div style={{ fontSize:11, color:s.color, fontWeight:600, marginTop:1 }}>● Sedang diproses</div>}
+                  {done   && <div style={{ fontSize:11, color:"#94a3b8", marginTop:1 }}>Selesai</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {next && canAdvanceStage(role, order.stage) && (
+          <button className="btn-primary"
+            onClick={() => {
+              if (confirm(`Lanjutkan paket ${order.customerName} ke tahap "${next.label}"?`)) {
+                onUpdateStage(order.orderId, next.id);
+              }
+            }}
+            disabled={updating} style={{ background: updating ? "#94a3b8" : next.color }}>
+            {updating ? "⏳ Memperbarui..." : `${next.emoji} Lanjut ke ${next.label}`}
+          </button>
+        )}
+        {!next && (canAddOrder(role)) && (
+          <div style={{ textAlign:"center", padding:16, background:"#f0fdf4", borderRadius:12,
+            color:"#059669", fontWeight:700, fontSize:15 }}>
+            ✅ Selesai!
+          </div>
+        )}
+        {next && !canAdvanceStage(role, order.stage) && role !== "viewer" && (
+          <div style={{ textAlign:"center", padding:12, background:"#f8fafc", borderRadius:12,
+            color:"#94a3b8", fontSize:13 }}>
+            🔒 Tahap ini dikendalikan oleh role lain
+          </div>
+        )}
+      </div>
+      {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.startIndex} onClose={() => setLightbox(null)} />}
+    </div>
+  );
+}
+
+/* ── Archive Modal ── */
+function ArchiveModal({ onClose }) {
+  const [orders,    setOrders]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [search,    setSearch]    = useState("");
+  const [selected,  setSelected]  = useState(null);
+  const [archiving, setArchiving] = useState(false);
+
+  const fetchArchive = async () => {
+    setLoading(true);
+    try {
+      const res  = await fetch(url + "?type=archive&t=" + Date.now());
+      const data = await res.json();
+      if (data.orders) setOrders(data.orders.reverse()); // terbaru di atas
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  const manualArchive = async () => {
+    if (!confirm("Arsipkan semua order Selesai yang sudah lebih dari 7 hari?")) return;
+    setArchiving(true);
+    try {
+      const res  = await fetch(url, { method:"POST", redirect:"follow", body: JSON.stringify({ action:"manual_archive" }) });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.count > 0 ? `✅ ${data.count} order berhasil diarsipkan!` : "Tidak ada order yang perlu diarsipkan saat ini.");
+        await fetchArchive();
+      }
+    } catch(e) { alert("Error: " + e.message); }
+    setArchiving(false);
+  };
+
+  useEffect(() => { fetchArchive(); }, []);
+
+  const sl = search.toLowerCase();
+  const filtered = orders.filter(o =>
+    !sl ||
+    String(o.customerName||"").toLowerCase().includes(sl) ||
+    String(o.jenisVermak||"").toLowerCase().includes(sl) ||
+    String(o.orderId||"").toLowerCase().includes(sl)
+  );
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#f5f3ff", zIndex:600, display:"flex", flexDirection:"column" }}>
+            {/* Header */}
+      <div style={{ background:"#7c3aed", color:"#fff", padding:"13px 18px", boxShadow:"0 2px 10px rgba(124,58,237,.3)", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800 }}>📦 Arsip Order</div>
+            <div style={{ fontSize:11, opacity:.75 }}>{orders.length} order diarsipkan</div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={manualArchive} disabled={archiving} style={{ background:"rgba(255,255,255,.15)",
+              border:"none", borderRadius:8, padding:"8px 12px", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:700 }}>
+              {archiving ? "⏳" : "🗂️ Arsipkan Sekarang"}
+            </button>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,.15)", border:"none",
+              borderRadius:8, padding:"8px 12px", color:"#fff", cursor:"pointer", fontSize:15 }}>✕</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e9d5ff", padding:"10px 18px", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", position:"relative" }}>
+          <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#94a3b8" }}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Cari di arsip..." style={{ width:"100%", padding:"9px 12px 9px 36px",
+              border:"1.5px solid #e9d5ff", borderRadius:10, fontSize:13, outline:"none", boxSizing:"border-box" }} />
+        </div>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ background:"#ede9fe", padding:"10px 18px", borderBottom:"1px solid #ddd6fe", flexShrink:0 }}>
+        <div style={{ maxWidth:600, margin:"0 auto", fontSize:12, color:"#6d28d9" }}>
+          ℹ️ Order berstatus <b>Selesai</b> yang sudah lebih dari <b>7 hari</b> otomatis dipindahkan ke sini setiap malam.
+          Data tetap tersimpan di Google Sheets tab <b>"Arsip"</b>.
+        </div>
+      </div>
+
+      {/* List */}
+      <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
+        <div style={{ maxWidth:600, margin:"0 auto" }}>
+          {loading && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>
+              <div style={{ fontWeight:600 }}>Memuat arsip...</div>
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+              <div style={{ fontSize:44, marginBottom:10 }}>📭</div>
+              <div style={{ fontWeight:700, color:"#64748b" }}>{search ? "Tidak ada hasil" : "Arsip masih kosong"}</div>
+              <div style={{ fontSize:13, marginTop:5 }}>Order Selesai yang sudah 7+ hari akan muncul di sini</div>
+            </div>
+          )}
+          {filtered.map(o => (
+            <div key={o.orderId} onClick={() => setSelected(o)} style={{ background:"#fff", borderRadius:14,
+              padding:14, marginBottom:10, cursor:"pointer", border:"1px solid #ede9fe",
+              boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", gap:10 }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15, color:"#1e293b" }}>{o.customerName}</div>
+                  <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{o.jenisPakaian} · {o.jenisVermak}</div>
+                </div>
+                {getPhotos(o.photoUrl)[0] && (
+                  <img src={getPhotos(o.photoUrl)[0]} alt="" style={{ width:44, height:44, borderRadius:8, objectFit:"cover", flexShrink:0, border:"1.5px solid #ede9fe" }} />
+                )}
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:10 }}>
+                <span style={{ background:"#ede9fe", color:"#7c3aed", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20 }}>
+                  📦 Diarsipkan
+                </span>
+                <span style={{ fontSize:11, color:"#94a3b8" }}>{formatDate(o.archivedAt || o.updatedAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selected && (
+        <div className="overlay" onClick={e => e.target===e.currentTarget && setSelected(null)}>
+          <div className="sheet">
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div>
+                <h2 style={{ fontSize:18, fontWeight:800, color:"#1e293b" }}>{selected.customerName}</h2>
+                <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{selected.orderId}</div>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b", fontSize:15 }}>✕</button>
+            </div>
+            {getPhotos(selected.photoUrl).length > 0 && (
+              <div style={{ display:"flex", gap:8, overflowX:"auto", marginBottom:14 }}>
+                {getPhotos(selected.photoUrl).map((url,i) => (
+                  <img key={i} src={url} alt="" style={{ width:130, height:130, objectFit:"cover", borderRadius:12, flexShrink:0, border:"1.5px solid #f1f5f9" }} />
+                ))}
+              </div>
+            )}
+            <div style={{ background:"#f8fafc", borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                {[["Jenis Pakaian",selected.jenisPakaian],["Jenis Vermak",selected.jenisVermak],
+                  ["Tgl. Masuk",formatDate(selected.createdAt)],["Diarsipkan",formatDate(selected.archivedAt||selected.updatedAt)]
+                ].map(([l,v]) => (
+                  <div key={l}>
+                    <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>{l}</div>
+                    <div style={{ fontSize:13, color:"#1e293b", fontWeight:600, marginTop:3 }}>{v||"-"}</div>
+                  </div>
+                ))}
+              </div>
+              {selected.catatan && <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Catatan Vermak</div>
+                <div style={{ fontSize:13, color:"#1e293b", marginTop:3 }}>{selected.catatan}</div>
+              </div>}
+              {selected.ukuran && <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid #e2e8f0" }}>
+                <div style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:.5 }}>Ukuran</div>
+                <div style={{ fontSize:13, color:"#1e293b", marginTop:3, whiteSpace:"pre-wrap", fontFamily:"monospace" }}>{selected.ukuran}</div>
+              </div>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ── Supabase Client ── */
+const SUPABASE_URL = "https://cxpqrrhewvwnzhwapioz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4cHFycmhld3Z3bnpod2FwaW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MjA5NzksImV4cCI6MjA5NjI5Njk3OX0.j0SUN050pAWHDGKzSe8K04to-XpRO5Z0DC24kP5ner8";
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── Telegram Config ── */
+const TG_BOT_TOKEN  = "";   // isi token bot Telegram
+const TG_CHAT_ID    = "";   // isi chat ID
+const TG_THREAD_ID  = "";   // isi thread ID
+
+const sendTelegram = async (text) => {
+  if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ chat_id:TG_CHAT_ID, message_thread_id:Number(TG_THREAD_ID), text, parse_mode:"HTML" })
+    });
+  } catch(e) { console.log("TG error:", e); }
+};
+
+const notifPaketBaru = (order, deadline) => {
+  const nl = "\n";
+  sendTelegram("🆕 <b>Paket Baru Masuk</b>" + nl+nl
+    + "👤 Customer : " + order.customerName + nl+nl
+    + "👕 Pakaian  : " + order.jenisPakaian + nl+nl
+    + "✂️ Alter    : " + order.jenisVermak  + nl+nl
+    + "📅 Masuk    : " + new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"}) + nl+nl
+    + "⏰ Deadline : " + deadline);
+};
+
+const notifUpdateStage = (customerName, newStage, createdAt, percepatan) => {
+  const nl = "\n";
+  const labels = { masuk:"📦 Paket Masuk", formulasi:"📐 Formulasi", dedel:"✂️ Seam Ripping",
+    jahit:"🧵 Proses Jahit", kirim:"🚚 Dikirim", selesai:"✅ Selesai" };
+  const label = labels[newStage] || newStage;
+  const waktu = new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"});
+  let deadlineStr = "-";
+  try {
+    const tglMasuk = new Date(createdAt);
+    const days = 7 - (Number(percepatan)||0);
+    const dl = new Date(tglMasuk.getTime() + days*86400000);
+    deadlineStr = dl.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
+  } catch(e) {}
+  sendTelegram("🔄 <b>Update Status Paket</b>" + nl+nl
+    + "👤 Customer : " + customerName + nl+nl
+    + "🔄 Status   : " + label        + nl+nl
+    + "⏰ Deadline : " + deadlineStr  + nl+nl
+    + "🕐 Waktu    : " + waktu);
+};
+
+/* ── Row mapper ── */
+const rowToOrder = r => ({
+  orderId:      r.order_id,
+  customerName: r.customer_name,
+  jenisPakaian: r.jenis_pakaian,
+  jenisVermak:  r.jenis_vermak,
+  catatan:      r.catatan   || "",
+  ukuran:       r.ukuran    || "",
+  stage:        r.stage     || "masuk",
+  percepatan:   r.percepatan || 0,
+  prioritas:    r.prioritas  || 0,
+  photoUrl:     r.photo_url  || "",
+  createdAt:    r.tgl_masuk,
+  updatedAt:    r.tgl_update,
+  tglFormulasi: r.tgl_formulasi,
+  tglDedel:     r.tgl_dedel,
+  tglJahit:     r.tgl_jahit,
+  tglKirim:     r.tgl_kirim,
+  tglSelesai:   r.tgl_selesai,
+  archivedAt:   r.archived_at,
+});
+
+const STAGE_TS = {
+  formulasi:"tgl_formulasi", dedel:"tgl_dedel",
+  jahit:"tgl_jahit", kirim:"tgl_kirim", selesai:"tgl_selesai"
+};
+
+/* ── Photo upload helper ── */
+const uploadPhoto = async (b64, orderId) => {
+  const byteStr = atob(b64);
+  const arr = new Uint8Array(byteStr.length);
+  for (let i=0;i<byteStr.length;i++) arr[i] = byteStr.charCodeAt(i);
+  const blob = new Blob([arr], {type:"image/jpeg"});
+  const path = `${orderId}/${Date.now()}.jpg`;
+  const { error } = await sb.storage.from("photos").upload(path, blob, {contentType:"image/jpeg"});
+  if (error) throw error;
+  const { data } = sb.storage.from("photos").getPublicUrl(path);
+  return data.publicUrl;
+};
+
+/* ── Main App ── */
+function App() {
+  const [role,      setRole]      = useState(() => { try { return localStorage.getItem("vt_role")||null; } catch{return null;} });
+  const [orders,    setOrders]    = useState([]);
+  const [refreshing,setRefreshing]= useState(false);
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [selected,  setSelected]  = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const [updating,  setUpdating]  = useState(false);
+  const [lastSync,  setLastSync]  = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showArchive,  setShowArchive]  = useState(false);
+  const [search,       setSearch]       = useState("");
+  const [fetchError,   setFetchError]   = useState("");
+
+  const saveRole = r => { try { if(r) localStorage.setItem("vt_role",r); else localStorage.removeItem("vt_role"); } catch{} setRole(r); };
+
+  const fetchOrders = async (silent=false) => {
+    if (!silent) setRefreshing(true);
+    try {
+      const { data, error } = await sb.from("orders").select("*")
+        .eq("archived", false).order("tgl_masuk", {ascending:false});
+      if (error) throw error;
+      setOrders(data.map(rowToOrder));
+      setLastSync(new Date());
+      setFetchError("");
+    } catch(e) {
+      if (!silent) setFetchError("⚠️ Gagal memuat data — tap 🔄 untuk coba lagi");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!role) return;
+    fetchOrders();
+    const iv = setInterval(() => fetchOrders(true), 30000);
+    return () => clearInterval(iv);
+  }, [role]);
+
+  const handleAdd = async fd => {
+    setSaving(true);
+    try {
+      const orderId = "VMK-" + Date.now();
+      const days = 7 - (Number(fd.percepatan)||0);
+      const deadline = new Date(Date.now() + days*86400000)
+        .toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
+      const { error } = await sb.from("orders").insert({
+        order_id:      orderId,
+        customer_name: fd.customerName,
+        jenis_pakaian: fd.jenisPakaian,
+        jenis_vermak:  fd.jenisVermak,
+        catatan:       fd.catatan   || "",
+        percepatan:    Number(fd.percepatan)||0,
+        stage:         "masuk",
+        photo_url:     "",
+      });
+      if (error) throw error;
+      notifPaketBaru(fd, deadline);
+      await fetchOrders();
+      setShowAdd(false);
+      // Upload photo in background
+      if (fd.photo) {
+        uploadPhoto(fd.photo, orderId)
+          .then(async url => {
+            await sb.from("orders").update({photo_url:url}).eq("order_id",orderId);
+            fetchOrders(true);
+          }).catch(()=>{});
+      }
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleUpdateStage = async (orderId, newStage) => {
+    setUpdating(true);
+    try {
+      const updates = { stage:newStage, tgl_update:new Date().toISOString() };
+      if (STAGE_TS[newStage]) updates[STAGE_TS[newStage]] = new Date().toISOString();
+      const { error } = await sb.from("orders").update(updates).eq("order_id", orderId);
+      if (error) throw error;
+      const order = orders.find(o => o.orderId===orderId);
+      if (order) notifUpdateStage(order.customerName, newStage, order.createdAt, order.percepatan);
+      await fetchOrders();
+      setSelected(null);
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setUpdating(false); }
+  };
+
+  const handleUpdateCustomerName = async (orderId, customerName) => {
+    try {
+      const { error } = await sb.from("orders").update({customer_name:customerName, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, customerName} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleDeletePhoto = async (orderId, photoIndex) => {
+    if (!confirm("Hapus foto ini?")) return;
+    try {
+      const { data } = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
+      const photos = (data?.photo_url||"").split("|").filter(Boolean);
+      photos.splice(photoIndex, 1);
+      const newUrl = photos.join("|");
+      const { error } = await sb.from("orders").update({photo_url:newUrl, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, photoUrl:newUrl} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleUpdatePercepatan = async (orderId, percepatan) => {
+    try {
+      const { error } = await sb.from("orders").update({percepatan:Number(percepatan), tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, percepatan} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleUpdateUkuran = async (orderId, ukuran) => {
+    try {
+      const { error } = await sb.from("orders").update({ukuran, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, ukuran} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleUpdateCatatan = async (orderId, catatan) => {
+    try {
+      const { error } = await sb.from("orders").update({catatan, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, catatan} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleAddPhoto = async (orderId, photoB64) => {
+    try {
+      const newUrl = await uploadPhoto(photoB64, orderId);
+      const { data } = await sb.from("orders").select("photo_url").eq("order_id",orderId).single();
+      const existing = data?.photo_url || "";
+      const combined = existing ? existing+"|"+newUrl : newUrl;
+      const { error } = await sb.from("orders").update({photo_url:combined, tgl_update:new Date().toISOString()}).eq("order_id",orderId);
+      if (error) throw error;
+      await fetchOrders();
+      setSelected(prev => prev ? {...prev, photoUrl:combined} : null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  const handleManualArchive = async () => {
+    try {
+      const selesaiOrders = orders.filter(o => normalizeStage(o.stage)==="selesai");
+      const oldEnough = selesaiOrders.filter(o => {
+        const finish = new Date(o.tglSelesai || o.updatedAt);
+        return (Date.now() - finish.getTime()) > 7*86400000;
+      });
+      if (oldEnough.length===0) { alert("Tidak ada order selesai yang sudah 7+ hari."); return; }
+      const ids = oldEnough.map(o => o.orderId);
+      const { error } = await sb.from("orders")
+        .update({archived:true, archived_at:new Date().toISOString()})
+        .in("order_id", ids);
+      if (error) throw error;
+      await fetchOrders();
+      alert(`${ids.length} order berhasil diarsipkan.`);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  if (!role) return <LoginScreen onLogin={saveRole} />;
+
+  return (
+    <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", background:"#f0f4f8", overflow:"hidden" }}>
+
+  return (
+    <div style={{ position:"fixed", inset:0, display:"flex", flexDirection:"column", background:"#f0f4f8", overflow:"hidden" }}>
+
+      {/* Header */}
+      <div style={{ background: ROLES[role]?.color || "#0d6b62", color:"#fff",
+        flexShrink:0, zIndex:200, boxShadow:"0 2px 10px rgba(0,0,0,.2)" }}>
+        <div style={{ display:"flex", alignItems:"center", padding:"12px 18px", position:"relative", minHeight:56 }}>
+
+          {/* Left — Logo */}
+          <div style={{ flexShrink:0 }}>
+            <img src="data:image/png;base64,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" alt="Tarda" style={{ filter:"drop-shadow(0 1px 2px rgba(0,0,0,0.3))", height:36, objectFit:"contain", mixBlendMode:"screen" }} />
+          </div>
+
+          {/* Center — Title */}
+          <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", textAlign:"center" }}>
+            <div style={{ fontSize:18, fontWeight:800, letterSpacing:-.4, whiteSpace:"nowrap" }}>Alter Tracker</div>
+          </div>
+
+          {/* Right — Buttons + Info */}
+          <div style={{ marginLeft:"auto", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, zIndex:1 }}>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={fetchOrders} disabled={refreshing}
+                style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"7px 10px", color:"#fff", cursor:"pointer", fontSize:14 }}>
+                {refreshing ? "⏳" : "🔄"}
+              </button>
+              {(role==="owner" || role==="pic_vermak" || role==="viewer") && (
+                <button onClick={() => setShowArchive(true)}
+                  style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"7px 10px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+                  📦
+                </button>
+              )}
+              {role==="owner" && (
+                <button onClick={() => setShowSettings(true)}
+                  style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"7px 10px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+                  ⚙️
+                </button>
+              )}
+              <button onClick={() => { if(confirm("Logout dari role " + ROLES[role]?.label + "?")) saveRole(null); }}
+                style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"7px 10px", color:"#fff", cursor:"pointer", fontSize:13 }}>
+                🚪
+              </button>
+            </div>
+            <div style={{ fontSize:11, opacity:.75, display:"flex", gap:5, alignItems:"center" }}>
+              <span style={{ fontWeight:600 }}>{ROLES[role]?.emoji} {ROLES[role]?.label}</span>
+              <span style={{ opacity:.7 }}>· {orders.filter(o=>normalizeStage(o.stage)!=="selesai").length} aktif · {orders.filter(o=>normalizeStage(o.stage)==="selesai").length} selesai{lastSync && ` · 🔄 ${lastSync.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})}`}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+{/* Error banner — inline, tidak popup */}
+      {fetchError && (
+        <div style={{ background:"#fef3c7", borderBottom:"1px solid #fde68a", padding:"8px 18px",
+          fontSize:13, color:"#92400e", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
+          <span>{fetchError}</span>
+          <button onClick={() => setFetchError("")} style={{ background:"none", border:"none", color:"#92400e", cursor:"pointer", fontSize:14 }}>✕</button>
+        </div>
+      )}
+
+      {/* Search */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"10px 14px", flexShrink:0 }}>
+        <div style={{ position:"relative" }}>
+          <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:15, color:"#94a3b8" }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cari nama customer, jenis vermak..."
+            style={{ width:"100%", padding:"9px 36px", border:"1.5px solid #e2e8f0",
+              borderRadius:10, fontSize:13, outline:"none", boxSizing:"border-box", background:"#f8fafc" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ position:"absolute", right:10, top:"50%",
+              transform:"translateY(-50%)", background:"none", border:"none", color:"#94a3b8",
+              cursor:"pointer", fontSize:16, lineHeight:1 }}>✕</button>
+          )}
+        </div>
+      </div>
+
+      {refreshing && orders.length===0
+        ? <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>⏳</div>
+            <div style={{ fontWeight:600 }}>Memuat data...</div>
+          </div>
+        : <KanbanBoard orders={orders} onCardClick={setSelected} search={search} />
+      }
+      {/* FAB - hanya owner & PIC Vermak */}
+      {canAddOrder(role) && (
+        <button className="fab" onClick={() => setShowAdd(true)}>+</button>
+      )}
+
+      {showAdd   && <AddModal    onClose={()=>setShowAdd(false)}  onSubmit={handleAdd}         saving={saving}   />}
+      {selected  && <DetailModal order={selected} onClose={()=>setSelected(null)} onUpdateStage={handleUpdateStage} onUpdateCatatan={handleUpdateCatatan} onUpdateUkuran={handleUpdateUkuran} onUpdatePercepatan={handleUpdatePercepatan} onAddPhoto={handleAddPhoto} onDeletePhoto={handleDeletePhoto} onUpdateCustomerName={handleUpdateCustomerName} updating={updating} role={role} />}
+      {showSettings && <SettingsModal onClose={()=>setShowSettings(false)} onResetUrl={() => { localStorage.removeItem("vt_url"); setUrl(""); saveRole(null); setShowSettings(false); setShowSetup(true); }} />}
+      {showArchive  && <ArchiveModal onClose={() => setShowArchive(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+</script>
+</body>
+</html>
