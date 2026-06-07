@@ -1184,37 +1184,43 @@ const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ── Telegram ── */
-const TG_BOT_TOKEN = "";
-const TG_CHAT_ID   = "";
-const TG_THREAD_ID = "";
-const sendTelegram = async (text) => {
-  if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
+const EDGE_FN_URL = "https://cxpqrrhewvwnzhwapioz.supabase.co/functions/v1/telegram-notify";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4cHFycmhld3Z3bnpod2FwaW96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MjA5NzksImV4cCI6MjA5NjI5Njk3OX0.j0SUN050pAWHDGKzSe8K04to-XpRO5Z0DC24kP5ner8";
+
+const sendTelegram = async (type, data) => {
   try {
-    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+    await fetch(EDGE_FN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ type, data }),
+    });
+  } catch(e) { console.log("TG Edge:", e); }
+};
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ chat_id:TG_CHAT_ID, message_thread_id:Number(TG_THREAD_ID), text, parse_mode:"HTML" })
     });
   } catch(e) { console.log("TG:", e); }
 };
-const notifPaketBaru = (fd, deadline) => {
-  const nl = "\n";
-  sendTelegram("🆕 <b>Paket Baru Masuk</b>"+nl+nl+"👤 Customer : "+fd.customerName+nl+nl
-    +"👕 Pakaian  : "+fd.jenisPakaian+nl+nl+"✂️ Alter    : "+fd.jenisVermak+nl+nl
-    +"📅 Masuk    : "+new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"})+nl+nl
-    +"⏰ Deadline : "+deadline);
+const notifPaketBaru = (fd, tglMasuk) => {
+  sendTelegram("paket_baru", {
+    customerName: fd.customerName,
+    jenisPakaian: fd.jenisPakaian,
+    jenisVermak:  fd.jenisVermak,
+    tglMasuk:     tglMasuk,
+    percepatan:   fd.percepatan || 0,
+  });
 };
+
 const notifUpdateStage = (customerName, newStage, createdAt, percepatan) => {
-  const nl = "\n";
-  const labels = {masuk:"📦 Paket Masuk",formulasi:"📐 Formulasi",dedel:"✂️ Seam Ripping",
-    jahit:"🧵 Proses Jahit",kirim:"🚚 Dikirim",selesai:"✅ Selesai"};
-  const waktu = new Date().toLocaleString("id-ID",{timeZone:"Asia/Jakarta"});
-  let dl = "-";
-  try {
-    const d = new Date(new Date(createdAt).getTime()+(7-(Number(percepatan)||0))*86400000);
-    dl = d.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric",timeZone:"Asia/Jakarta"});
-  } catch(e) {}
-  sendTelegram("🔄 <b>Update Status Paket</b>"+nl+nl+"👤 Customer : "+customerName+nl+nl
-    +"🔄 Status   : "+(labels[newStage]||newStage)+nl+nl+"⏰ Deadline : "+dl+nl+nl+"🕐 Waktu    : "+waktu);
+  sendTelegram("update_stage", {
+    customerName,
+    newStage,
+    tglMasuk:   createdAt,
+    percepatan: percepatan || 0,
+  });
 };
 
 /* ── Row mapper ── */
@@ -1282,7 +1288,7 @@ function App() {
         jenis_vermak:fd.jenisVermak, catatan:fd.catatan||"", percepatan:Number(fd.percepatan)||0, stage:"masuk", photo_url:"",
       });
       if(error) throw error;
-      notifPaketBaru(fd, deadline);
+      notifPaketBaru(fd, new Date().toISOString());
       await fetchOrders(); setShowAdd(false);
       if(fd.photo) {
         uploadPhoto(fd.photo, orderId).then(async url=>{
