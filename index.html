@@ -1445,10 +1445,6 @@ function App() {
           </div>
             <div style={{ fontSize:11, opacity:.75, display:"flex", gap:5, alignItems:"center" }}>
               <span style={{ fontWeight:600 }}>{ROLES[role]?.emoji} {ROLES[role]?.label}</span>
-              <span style={{ opacity:.7 }}>· {orders.filter(o=>normalizeStage(o.stage)!=="selesai").length} aktif · {orders.filter(o=>normalizeStage(o.stage)==="selesai").length} selesai{lastSync && ` · 🔄 ${lastSync.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})}`}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
 {/* Error banner — inline, tidak popup */}
