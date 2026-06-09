@@ -104,6 +104,23 @@ function canAdvanceStage(role, stage) {
 const JENIS_PAKAIAN = ["Gamis","Kemeja","Celana","Abaya","Lainnya"];
 const JENIS_VERMAK  = ["Potong Panjang","Kecilkan Badan","Besarkan Badan","Tambah Kancing","Lainnya"];
 
+/* ── Alter Data constants ── */
+const JENIS_ALTER_OPT = [
+  "Lingkar Kerah","Panjang Lengan","Lingkar Siku","Lingkar Otot",
+  "Lingkar Ketiak","Lingkar Manset","Lingkar Dada","Lingkar Pinggang",
+  "Lingkar Pinggul","Panjang Gamis","Lebar Bawah","Jahitan Rusak",
+  "Ganti Kerah","Ganti Plaket","Ganti Manset"
+];
+const JENIS_PAKAIAN_ALTER = ["Gamis","Rompi","Abaya","Kemeja","Outer Abaya","Outer Gamis","Celana"];
+const JENIS_KAIN_ALTER = [
+  {label:"Suprima",code:"HB"},{label:"John Gate",code:"JT"},{label:"Boss",code:"BB"},
+  {label:"Bottega",code:"BV"},{label:"Twill",code:"TW"},{label:"Pinstripe",code:"PS"},
+  {label:"Hermess",code:"HR"},{label:"Vitale Barberis",code:"VB"},{label:"Minova",code:"MN"},
+  {label:"Stevano Ricci",code:"SR"},{label:"Suede",code:"SD"},{label:"Sultan",code:"SL"},
+  {label:"Majestic Silk",code:"MS"}
+];
+function canInputAlterData(role) { return role==="owner" || role==="pic_vermak"; }
+
 function getPhotos(photoUrl) {
   if (!photoUrl) return [];
   return String(photoUrl).split("|").map(s => s.trim()).filter(s => s && s.startsWith("http"));
@@ -944,6 +961,625 @@ function ArchiveModal({ onClose }) {
   );
 }
 
+/* ── Alter Data Page ── */
+function AlterDataPage({ onClose, role }) {
+  const canInput = canInputAlterData(role);
+  const defaultTab = canInput ? "input" : "dashboard";
+  const [tab, setTab]               = useState(defaultTab);
+  const [staging, setStaging]       = useState([]);
+  const [saving, setSaving]         = useState(false);
+  const [saveMsg, setSaveMsg]       = useState(false);
+  const [records, setRecords]       = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [editItem, setEditItem]     = useState(null);
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo]     = useState("");
+  const [exporting, setExporting]   = useState(false);
+
+  const today = new Date().toISOString().split("T")[0];
+  const [formDate, setFormDate]                   = useState(today);
+  const [formPakaian, setFormPakaian]             = useState("Gamis");
+  const [formPakaianCustom, setFormPakaianCustom] = useState("");
+  const [formAlter, setFormAlter]                 = useState([]);
+  const [formAlterCustom, setFormAlterCustom]     = useState("");
+  const [formKain, setFormKain]                   = useState("");
+  const [formKainCustom, setFormKainCustom]       = useState("");
+  const [formKode, setFormKode]                   = useState("");
+
+  /* Kode kain: gabungkan prefix kain + angka yang diketik */
+  const getKodeKain = () => {
+    const kode = formKode.trim();
+    if (!kode || kode === "-") return "-";
+    const kainObj = JENIS_KAIN_ALTER.find(k => k.label === formKain);
+    if (!kainObj) return kode;
+    if (kode.toUpperCase().startsWith(kainObj.code + "-")) return kode.toUpperCase();
+    return kainObj.code + "-" + kode;
+  };
+
+  const toggleAlter = (item) => setFormAlter(prev =>
+    prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]
+  );
+  const addCustomAlter = () => {
+    const v = formAlterCustom.trim();
+    if (!v || formAlter.includes(v)) return;
+    setFormAlter(prev => [...prev, v]);
+    setFormAlterCustom("");
+  };
+  const addToStaging = () => {
+    if (!formAlter.length) { alert("Pilih minimal satu jenis alter."); return; }
+    const pakaianVal = formPakaian === "Lainnya" ? formPakaianCustom.trim() : formPakaian;
+    const kainVal    = formKain === "Lainnya" ? formKainCustom.trim() : formKain;
+    if (!pakaianVal) { alert("Isi jenis pakaian."); return; }
+    if (!kainVal)    { alert("Pilih jenis kain."); return; }
+    const kodeVal = formKain === "Lainnya" ? (formKode.trim() || "-") : getKodeKain();
+    setStaging(prev => [...prev, {
+      tanggal: formDate, jenis_pakaian: pakaianVal,
+      jenis_alter: [...formAlter], jenis_kain: kainVal,
+      kode_kain: kodeVal, _key: Date.now()
+    }]);
+    setFormAlter([]); setFormKain(""); setFormKode(""); setFormKainCustom("");
+  };
+  const removeStaging = (key) => setStaging(prev => prev.filter(x => x._key !== key));
+  const saveAll = async () => {
+    if (!staging.length) { alert("Belum ada item di staging."); return; }
+    setSaving(true);
+    try {
+      const rows = staging.map(({ _key, ...rest }) => rest);
+      const { error } = await sb.from("alter_data").insert(rows);
+      if (error) throw error;
+      setStaging([]); setSaveMsg(true); setTimeout(() => setSaveMsg(false), 2500);
+    } catch(e) { alert("Error: " + e.message); }
+    finally { setSaving(false); }
+  };
+  const fetchRecords = async () => {
+    setLoading(true);
+    try {
+      let q = sb.from("alter_data").select("*").order("tanggal", { ascending: false });
+      if (filterFrom) q = q.gte("tanggal", filterFrom);
+      if (filterTo)   q = q.lte("tanggal", filterTo);
+      const { data, error } = await q;
+      if (error) throw error;
+      setRecords(data || []);
+    } catch(e) { console.log(e); }
+    finally { setLoading(false); }
+  };
+  const deleteRecord = async (id) => {
+    if (!confirm("Hapus data alter ini?")) return;
+    try {
+      const { error } = await sb.from("alter_data").delete().eq("id", id);
+      if (error) throw error;
+      setRecords(prev => prev.filter(r => r.id !== id));
+    } catch(e) { alert("Error: " + e.message); }
+  };
+  const saveEdit = async () => {
+    if (!editItem) return;
+    try {
+      const { error } = await sb.from("alter_data").update({
+        tanggal: editItem.tanggal, jenis_pakaian: editItem.jenis_pakaian,
+        jenis_alter: editItem.jenis_alter, jenis_kain: editItem.jenis_kain, kode_kain: editItem.kode_kain,
+      }).eq("id", editItem.id);
+      if (error) throw error;
+      setRecords(prev => prev.map(r => r.id === editItem.id ? editItem : r));
+      setEditItem(null);
+    } catch(e) { alert("Error: " + e.message); }
+  };
+
+  useEffect(() => { if (tab === "dashboard" || tab === "log") fetchRecords(); }, [tab]);
+  useEffect(() => { if (tab === "dashboard" || tab === "log") fetchRecords(); }, [filterFrom, filterTo]);
+
+  /* ── Komputasi dashboard ── */
+  const byDate = {};
+  records.forEach(r => { if (!byDate[r.tanggal]) byDate[r.tanggal] = 0; byDate[r.tanggal]++; });
+  const totalGamis      = records.length;
+  const hariDicatat     = Object.keys(byDate).length;
+  const rataRata        = hariDicatat ? (totalGamis / hariDicatat).toFixed(1) : "0";
+  const alterCount      = {}; records.forEach(r => (r.jenis_alter||[]).forEach(a => { alterCount[a] = (alterCount[a]||0)+1; }));
+  const totalAlterItems = Object.values(alterCount).reduce((s,v) => s+v, 0);
+  const kainCount       = {}; records.forEach(r => { kainCount[r.jenis_kain]       = (kainCount[r.jenis_kain]||0)+1; });
+  const pakaianCount    = {}; records.forEach(r => { pakaianCount[r.jenis_pakaian] = (pakaianCount[r.jenis_pakaian]||0)+1; });
+  const kodeCount       = {}; records.forEach(r => { if (r.kode_kain && r.kode_kain !== "-") kodeCount[r.kode_kain] = (kodeCount[r.kode_kain]||0)+1; });
+
+  /* ── Crosstab: Jenis Alter × Jenis Kain ── */
+  const allKains  = [...new Set(records.map(r => r.jenis_kain))].sort();
+  const allAlters = Object.keys(alterCount).sort((a,b) => alterCount[b]-alterCount[a]).slice(0,10);
+  const crosstab  = {};
+  records.forEach(r => {
+    (r.jenis_alter||[]).forEach(a => {
+      if (!crosstab[a]) crosstab[a] = {};
+      crosstab[a][r.jenis_kain] = (crosstab[a][r.jenis_kain]||0)+1;
+    });
+  });
+
+  const sortedEntries = (obj) => Object.entries(obj).sort((a,b) => b[1]-a[1]);
+
+  /* ── Export PDF → download ── */
+  const exportPDF = () => {
+    setExporting(true);
+    const periodeLabel = filterFrom || filterTo
+      ? `${filterFrom || "awal"} s/d ${filterTo || "sekarang"}`
+      : "Semua data";
+    const exportDate = new Date().toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" });
+    const top3Alter  = sortedEntries(alterCount).slice(0,3);
+    const medals     = ["🥇","🥈","🥉"];
+
+    const tableRows = (entries, total) => entries.map(([label, count]) => {
+      const pct = total ? Math.round(count/total*100) : 0;
+      return `<tr><td>${label}</td><td style="text-align:center">${count}x</td><td style="text-align:center;font-weight:700;color:#0d6b62">${pct}%</td></tr>`;
+    }).join("");
+
+    const crosstabHeader = allKains.map(k => `<th style="text-align:center;font-size:10px">${k}</th>`).join("");
+    const crosstabRows = allAlters.map(a => {
+      const cells = allKains.map(k => {
+        const v = (crosstab[a]||{})[k] || 0;
+        return `<td style="text-align:center;color:${v>0?"#0d6b62":"#cbd5e1"};font-weight:${v>0?700:400}">${v>0?v:"-"}</td>`;
+      }).join("");
+      return `<tr><td style="font-weight:600">${a}</td>${cells}</tr>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+<title>Laporan Data Alter — Tarda Tailor</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;color:#1e293b;background:#fff;padding:32px 40px;font-size:13px}
+  h1{font-size:20px;font-weight:800;color:#0d6b62;margin-bottom:2px}
+  .subtitle{font-size:12px;color:#64748b;margin-bottom:4px}
+  .meta{font-size:11px;color:#94a3b8;margin-bottom:24px}
+  .divider{border:none;border-top:2px solid #0d6b62;margin-bottom:20px}
+  .section-title{font-size:14px;font-weight:700;color:#1e293b;margin:20px 0 12px;border-left:3px solid #0d6b62;padding-left:8px}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+  .stat-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;text-align:center}
+  .stat-val{font-size:28px;font-weight:800;color:#0d6b62}
+  .stat-label{font-size:11px;color:#64748b;margin-top:3px}
+  .top3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+  .top3-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center}
+  .top3-medal{font-size:22px}
+  .top3-name{font-size:12px;font-weight:700;color:#1e293b;margin:6px 0 4px}
+  .top3-stat{font-size:13px;font-weight:800;color:#0d6b62}
+  .tables-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:#f1f5f9}
+  th{padding:7px 10px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  td{padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px}
+  tr:last-child td{border-bottom:none}
+  .crosstab th{font-size:10px;padding:5px 8px}
+  .crosstab td{font-size:11px;padding:5px 8px}
+  .footer{margin-top:32px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:12px}
+</style></head><body>
+<h1>📊 Laporan Data Alter</h1>
+<div class="subtitle">Tarda Tailor</div>
+<div class="meta">Periode: ${periodeLabel} &nbsp;·&nbsp; Diekspor: ${exportDate}</div>
+<hr class="divider"/>
+
+<div class="section-title">Ringkasan</div>
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">${totalGamis}</div><div class="stat-label">Total Gamis</div></div>
+  <div class="stat-card"><div class="stat-val">${hariDicatat}</div><div class="stat-label">Hari Dicatat</div></div>
+  <div class="stat-card"><div class="stat-val">${rataRata}</div><div class="stat-label">Rata-rata / Hari</div></div>
+</div>
+
+${top3Alter.length > 0 ? `
+<div class="section-title">Top 3 Jenis Alter Terbanyak</div>
+<div class="top3">${top3Alter.map(([label,count],i) => {
+  const pct = totalAlterItems ? Math.round(count/totalAlterItems*100) : 0;
+  return `<div class="top3-card"><div class="top3-medal">${medals[i]}</div><div class="top3-name">${label}</div><div class="top3-stat">${count}x &nbsp; ${pct}%</div></div>`;
+}).join("")}</div>` : ""}
+
+<div class="section-title">Detail Jenis Alter</div>
+<table style="margin-bottom:24px">
+  <thead><tr><th>Jenis Alter</th><th style="text-align:center">Jumlah</th><th style="text-align:center">Persentase</th></tr></thead>
+  <tbody>${tableRows(sortedEntries(alterCount), totalAlterItems)}</tbody>
+</table>
+
+<div class="tables-grid">
+  <div><div class="section-title">Jenis Pakaian</div>
+  <table><thead><tr><th>Pakaian</th><th style="text-align:center">Jumlah</th><th style="text-align:center">%</th></tr></thead>
+  <tbody>${tableRows(sortedEntries(pakaianCount), totalGamis)}</tbody></table></div>
+  <div><div class="section-title">Jenis Kain</div>
+  <table><thead><tr><th>Kain</th><th style="text-align:center">Jumlah</th><th style="text-align:center">%</th></tr></thead>
+  <tbody>${tableRows(sortedEntries(kainCount), totalGamis)}</tbody></table></div>
+</div>
+
+${Object.keys(kodeCount).length > 0 ? `
+<div class="section-title">Kode Kain</div>
+<table style="margin-bottom:24px">
+  <thead><tr><th>Kode Kain</th><th style="text-align:center">Jumlah</th><th style="text-align:center">%</th></tr></thead>
+  <tbody>${tableRows(sortedEntries(kodeCount), totalGamis)}</tbody>
+</table>` : ""}
+
+${allAlters.length > 0 && allKains.length > 0 ? `
+<div class="section-title">Pola Alter per Kain (Crosstab)</div>
+<p style="font-size:11px;color:#64748b;margin-bottom:10px">Angka = jumlah kejadian jenis alter tersebut pada kain tersebut</p>
+<div style="overflow-x:auto">
+<table class="crosstab" style="margin-bottom:24px">
+  <thead><tr><th>Jenis Alter</th>${crosstabHeader}</tr></thead>
+  <tbody>${crosstabRows}</tbody>
+</table></div>` : ""}
+
+<div class="footer">Laporan ini dibuat otomatis dari sistem Alter Tracker · Tarda Tailor</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type:"text/html;charset=utf-8" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `laporan-alter-tarda-${new Date().toISOString().split("T")[0]}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+  };
+
+  /* ── Render bar ── */
+  const renderBar = (countObj, total, color) => {
+    const sorted = sortedEntries(countObj).slice(0,10);
+    if (!sorted.length) return <p style={{ fontSize:13, color:"#94a3b8", fontStyle:"italic" }}>Belum ada data.</p>;
+    return sorted.map(([label, count]) => {
+      const pct = total ? Math.round(count/total*100) : 0;
+      return (
+        <div key={label} style={{ marginBottom:10 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#475569", marginBottom:3 }}>
+            <span>{label}</span><span>{count}x &nbsp;{pct}%</span>
+          </div>
+          <div style={{ height:7, background:"#e2e8f0", borderRadius:4, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:pct+"%", background:color, borderRadius:4, transition:"width .3s" }} />
+          </div>
+        </div>
+      );
+    });
+  };
+
+  /* ── Render crosstab di dashboard ── */
+  const renderCrosstab = () => {
+    if (!allAlters.length || !allKains.length) return <p style={{ fontSize:13, color:"#94a3b8", fontStyle:"italic" }}>Belum ada data.</p>;
+    const maxVal = Math.max(...allAlters.flatMap(a => allKains.map(k => (crosstab[a]||{})[k]||0)));
+    return (
+      <div style={{ overflowX:"auto" }}>
+        <table style={{ borderCollapse:"collapse", fontSize:12, width:"100%" }}>
+          <thead>
+            <tr>
+              <th style={{ padding:"6px 10px", textAlign:"left", fontSize:11, color:"#64748b", fontWeight:700, background:"#f8fafc", borderBottom:"2px solid #e2e8f0", whiteSpace:"nowrap" }}>Jenis Alter</th>
+              {allKains.map(k => (
+                <th key={k} style={{ padding:"6px 8px", textAlign:"center", fontSize:10, color:"#64748b", fontWeight:700, background:"#f8fafc", borderBottom:"2px solid #e2e8f0", whiteSpace:"nowrap" }}>{k}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {allAlters.map(a => (
+              <tr key={a} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                <td style={{ padding:"6px 10px", fontWeight:600, color:"#1e293b", whiteSpace:"nowrap" }}>{a}</td>
+                {allKains.map(k => {
+                  const v = (crosstab[a]||{})[k] || 0;
+                  const intensity = maxVal > 0 ? v/maxVal : 0;
+                  return (
+                    <td key={k} style={{
+                      padding:"6px 8px", textAlign:"center",
+                      background: v > 0 ? `rgba(13,107,98,${0.08 + intensity*0.5})` : "transparent",
+                      color: v > 0 ? "#0d6b62" : "#cbd5e1",
+                      fontWeight: v > 0 ? 700 : 400,
+                      fontSize:12
+                    }}>{v > 0 ? v : "—"}</td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const filterBlock = (
+    <div style={{ background:"#fff", borderRadius:14, padding:"14px 16px", marginBottom:14, border:"1px solid #e2e8f0" }}>
+      <div style={{ fontSize:12, fontWeight:700, color:"#475569", marginBottom:10, textTransform:"uppercase", letterSpacing:.5 }}>Filter Tanggal</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        <div>
+          <label style={{ fontSize:12, color:"#94a3b8", display:"block", marginBottom:4 }}>Dari</label>
+          <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} className="field-input" style={{ fontSize:13 }} />
+        </div>
+        <div>
+          <label style={{ fontSize:12, color:"#94a3b8", display:"block", marginBottom:4 }}>Sampai</label>
+          <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} className="field-input" style={{ fontSize:13 }} />
+        </div>
+      </div>
+      {(filterFrom||filterTo) && <button onClick={()=>{setFilterFrom("");setFilterTo("");}} style={{ marginTop:8, background:"none", border:"none", color:"#94a3b8", fontSize:12, cursor:"pointer" }}>× Reset filter</button>}
+    </div>
+  );
+
+  const TABS = canInput
+    ? [["input","📝 Input"],["dashboard","📊 Dashboard"],["log","📋 Log"]]
+    : [["dashboard","📊 Dashboard"],["log","📋 Log"]];
+
+  /* ── Kode kain preview ── */
+  const kodePreview = (() => {
+    if (!formKain || formKain === "Lainnya" || !formKode.trim()) return null;
+    const kainObj = JENIS_KAIN_ALTER.find(k => k.label === formKain);
+    if (!kainObj) return null;
+    const kode = formKode.trim();
+    if (kode.toUpperCase().startsWith(kainObj.code + "-")) return kode.toUpperCase();
+    return kainObj.code + "-" + kode;
+  })();
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#f0f4f8", zIndex:600, display:"flex", flexDirection:"column" }}>
+
+      {/* Header */}
+      <div style={{ background:"#0d6b62", color:"#fff", padding:"13px 18px", boxShadow:"0 2px 10px rgba(13,107,98,.3)", flexShrink:0 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800 }}>📊 Data Alter</div>
+            <div style={{ fontSize:11, opacity:.75 }}>{totalGamis} item tercatat</div>
+          </div>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            {role==="owner" && tab==="dashboard" && (
+              <button onClick={exportPDF} disabled={exporting||loading||totalGamis===0}
+                style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:8,
+                  padding:"7px 13px", color:"#fff", cursor:(exporting||loading||totalGamis===0)?"not-allowed":"pointer",
+                  fontSize:12, fontWeight:700, opacity:(exporting||loading||totalGamis===0)?0.5:1 }}>
+                {exporting ? "⏳..." : "📄 Download PDF"}
+              </button>
+            )}
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,.15)", border:"none", borderRadius:8, padding:"8px 14px", color:"#fff", cursor:"pointer", fontSize:15 }}>✕</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ background:"#fff", borderBottom:"1px solid #e2e8f0", flexShrink:0 }}>
+        <div style={{ display:"flex", padding:"0 18px" }}>
+          {TABS.map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)} style={{
+              padding:"12px 16px", border:"none", background:"none", cursor:"pointer",
+              fontSize:13, fontWeight: tab===id ? 700 : 400,
+              color: tab===id ? "#0d6b62" : "#64748b",
+              borderBottom: tab===id ? "2.5px solid #0d6b62" : "2.5px solid transparent"
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
+
+        {/* === INPUT TAB === */}
+        {tab === "input" && canInput && (
+          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", gap:16, alignItems:"start" }}>
+
+            {/* Kolom kiri: form */}
+            <div style={{ background:"#fff", borderRadius:14, padding:"16px", border:"1px solid #e2e8f0" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#1e293b", marginBottom:14 }}>Form Input</div>
+              <div style={{ marginBottom:14 }}>
+                <label className="field-label">Tanggal</label>
+                <input type="date" value={formDate} onChange={e=>setFormDate(e.target.value)} className="field-input" />
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label className="field-label">Jenis Pakaian</label>
+                <select className="field-input" value={formPakaian} onChange={e=>setFormPakaian(e.target.value)}>
+                  {JENIS_PAKAIAN_ALTER.map(j => <option key={j}>{j}</option>)}
+                  <option value="Lainnya">Lainnya (isi manual)</option>
+                </select>
+                {formPakaian === "Lainnya" && (
+                  <input className="field-input" placeholder="Tulis jenis pakaian..." value={formPakaianCustom} onChange={e=>setFormPakaianCustom(e.target.value)} style={{ marginTop:8 }} />
+                )}
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label className="field-label">Jenis Alter <span style={{ fontWeight:400, color:"#94a3b8" }}>(pilih semua yang berlaku)</span></label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+                  {JENIS_ALTER_OPT.map(item => (
+                    <button key={item} type="button" onClick={() => toggleAlter(item)} style={{
+                      fontSize:12, padding:"5px 12px", borderRadius:20, cursor:"pointer",
+                      border: formAlter.includes(item) ? "1.5px solid #0d6b62" : "1px solid #e2e8f0",
+                      background: formAlter.includes(item) ? "#f0fdf4" : "#f8fafc",
+                      color: formAlter.includes(item) ? "#0d6b62" : "#64748b",
+                      fontWeight: formAlter.includes(item) ? 700 : 400
+                    }}>{formAlter.includes(item) ? "✓ " : ""}{item}</button>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <input className="field-input" placeholder="Tambah jenis alter lain..." value={formAlterCustom}
+                    onChange={e=>setFormAlterCustom(e.target.value)}
+                    onKeyDown={e => e.key==="Enter" && addCustomAlter()}
+                    style={{ flex:1, fontSize:13 }} />
+                  <button onClick={addCustomAlter} style={{ padding:"8px 14px", background:"#f1f5f9", border:"1px solid #e2e8f0", borderRadius:10, cursor:"pointer", fontSize:13, color:"#475569", whiteSpace:"nowrap" }}>+ Tambah</button>
+                </div>
+                {formAlter.length > 0 && (
+                  <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {formAlter.map(a => (
+                      <span key={a} style={{ background:"#dcfce7", color:"#166534", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20, display:"flex", alignItems:"center", gap:4 }}>
+                        {a}<span onClick={() => toggleAlter(a)} style={{ cursor:"pointer", opacity:.7 }}>×</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label className="field-label">Jenis Kain</label>
+                <select className="field-input" value={formKain} onChange={e=>{ setFormKain(e.target.value); setFormKode(""); }}>
+                  <option value="">-- Pilih kain --</option>
+                  {JENIS_KAIN_ALTER.map(k => <option key={k.code} value={k.label}>{k.label} ({k.code})</option>)}
+                  <option value="Lainnya">Lainnya (isi manual)</option>
+                </select>
+                {formKain === "Lainnya" && (
+                  <input className="field-input" placeholder="Tulis jenis kain..." value={formKainCustom} onChange={e=>setFormKainCustom(e.target.value)} style={{ marginTop:8 }} />
+                )}
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label className="field-label">Kode Kain</label>
+                <input className="field-input" placeholder={formKain && formKain !== "Lainnya" ? `cth. 047 → akan jadi ${JENIS_KAIN_ALTER.find(k=>k.label===formKain)?.code||""}-047` : "cth. HB-001"} value={formKode} onChange={e=>setFormKode(e.target.value)} />
+                {kodePreview && (
+                  <div style={{ marginTop:5, fontSize:12, color:"#0d6b62", fontWeight:600 }}>
+                    ✓ Akan disimpan sebagai: <strong>{kodePreview}</strong>
+                  </div>
+                )}
+              </div>
+              <button onClick={addToStaging} style={{ width:"100%", padding:"12px", background:"#f0fdf4", border:"1.5px solid #0d6b62", borderRadius:12, fontSize:14, fontWeight:700, color:"#0d6b62", cursor:"pointer" }}>
+                + Tambah ke Antrian
+              </button>
+            </div>
+
+            {/* Kolom kanan: antrian sticky */}
+            <div style={{ position:"sticky", top:0 }}>
+              <div style={{ background:"#fff", borderRadius:14, padding:"16px", border:"1px solid #e2e8f0", minHeight:120 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#1e293b" }}>
+                    Antrian {staging.length > 0 ? `(${staging.length} gamis)` : ""}
+                  </div>
+                  {staging.length > 0 && <span style={{ fontSize:11, color:"#94a3b8" }}>Tap × untuk hapus</span>}
+                </div>
+                {staging.length === 0
+                  ? <div style={{ textAlign:"center", padding:"32px 0", color:"#cbd5e1" }}>
+                      <div style={{ fontSize:32, marginBottom:6 }}>📋</div>
+                      <div style={{ fontSize:12 }}>Belum ada antrian</div>
+                    </div>
+                  : staging.map((item, i) => (
+                    <div key={item._key} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"10px 0", borderBottom: i<staging.length-1 ? "1px solid #f1f5f9" : "none" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, color:"#94a3b8", marginBottom:3 }}>
+                          {item.tanggal} · {item.jenis_pakaian} · {item.jenis_kain}
+                          {item.kode_kain && item.kode_kain !== "-" ? ` (${item.kode_kain})` : ""}
+                        </div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                          {item.jenis_alter.map(a => (
+                            <span key={a} style={{ background:"#dcfce7", color:"#166534", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20 }}>{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <button onClick={() => removeStaging(item._key)} style={{ background:"none", border:"none", color:"#dc2626", cursor:"pointer", fontSize:18, padding:"0 4px", flexShrink:0 }}>×</button>
+                    </div>
+                  ))
+                }
+              </div>
+              {staging.length > 0 && (
+                <div style={{ marginTop:10 }}>
+                  <button onClick={saveAll} disabled={saving} style={{ width:"100%", padding:"14px", background:saving?"#94a3b8":"#0d6b62", color:"#fff", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor:saving?"not-allowed":"pointer" }}>
+                    {saving ? "⏳ Menyimpan..." : `✓ Simpan Semua (${staging.length} gamis)`}
+                  </button>
+                  {saveMsg && <div style={{ textAlign:"center", marginTop:8, fontSize:13, color:"#059669", fontWeight:600 }}>✅ Tersimpan!</div>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* === DASHBOARD TAB === */}
+        {tab === "dashboard" && (
+          <div>
+            {filterBlock}
+            {loading
+              ? <div style={{ textAlign:"center", padding:"40px 0", color:"#94a3b8" }}>⏳ Memuat...</div>
+              : (
+                <div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
+                    {[["Total Gamis",totalGamis,"#0d6b62"],["Hari Dicatat",hariDicatat,"#2563eb"],["Rata-rata/Hari",rataRata,"#7c3aed"]].map(([label,val,color]) => (
+                      <div key={label} style={{ background:"#fff", borderRadius:12, padding:"14px", border:"1px solid #e2e8f0", textAlign:"center" }}>
+                        <div style={{ fontSize:26, fontWeight:800, color }}>{val}</div>
+                        <div style={{ fontSize:12, color:"#94a3b8", marginTop:4 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))", gap:12, marginBottom:12 }}>
+                    {[
+                      ["Jenis Alter", alterCount, totalAlterItems, "#0d6b62"],
+                      ["Jenis Pakaian", pakaianCount, totalGamis, "#2563eb"],
+                      ["Jenis Kain", kainCount, totalGamis, "#ea580c"],
+                      ["Kode Kain", kodeCount, totalGamis, "#7c3aed"],
+                    ].map(([title, countObj, total, color]) => (
+                      <div key={title} style={{ background:"#fff", borderRadius:14, padding:"14px 16px", border:"1px solid #e2e8f0" }}>
+                        <p style={{ fontSize:13, fontWeight:700, marginBottom:12, color:"#1e293b" }}>{title}</p>
+                        {renderBar(countObj, total, color)}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Crosstab */}
+                  <div style={{ background:"#fff", borderRadius:14, padding:"14px 16px", border:"1px solid #e2e8f0" }}>
+                    <p style={{ fontSize:13, fontWeight:700, marginBottom:4, color:"#1e293b" }}>Pola Alter per Kain</p>
+                    <p style={{ fontSize:11, color:"#94a3b8", marginBottom:12 }}>Angka = jumlah kejadian · warna lebih gelap = lebih sering</p>
+                    {renderCrosstab()}
+                  </div>
+                </div>
+              )
+            }
+          </div>
+        )}
+
+        {/* === LOG TAB === */}
+        {tab === "log" && (
+          <div>
+            {filterBlock}
+            {loading
+              ? <div style={{ textAlign:"center", padding:"40px 0", color:"#94a3b8" }}>⏳ Memuat...</div>
+              : records.length === 0
+                ? <div style={{ textAlign:"center", padding:"60px 0", color:"#94a3b8" }}><div style={{ fontSize:44, marginBottom:10 }}>📭</div><div style={{ fontWeight:700, color:"#64748b" }}>Belum ada data</div></div>
+                : (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:10 }}>
+                    {records.map(r => (
+                      <div key={r.id} style={{ background:"#fff", borderRadius:14, padding:"14px 16px", border:"1px solid #e2e8f0" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                          <div>
+                            <div style={{ fontSize:13, fontWeight:700, color:"#1e293b" }}>{r.tanggal} · {r.jenis_pakaian}</div>
+                            <div style={{ fontSize:12, color:"#64748b", marginTop:2 }}>{r.jenis_kain}{r.kode_kain && r.kode_kain !== "-" ? ` (${r.kode_kain})` : ""}</div>
+                          </div>
+                          {canInput && (
+                            <div style={{ display:"flex", gap:6 }}>
+                              <button onClick={() => setEditItem({...r})} style={{ background:"#eff6ff", border:"none", borderRadius:8, padding:"5px 10px", cursor:"pointer", fontSize:11, color:"#2563eb", fontWeight:700 }}>✏️ Edit</button>
+                              <button onClick={() => deleteRecord(r.id)} style={{ background:"#fef2f2", border:"none", borderRadius:8, padding:"5px 10px", cursor:"pointer", fontSize:11, color:"#dc2626", fontWeight:700 }}>🗑️ Hapus</button>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                          {(r.jenis_alter||[]).map(a => (
+                            <span key={a} style={{ background:"#dcfce7", color:"#166534", fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:20 }}>{a}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+            }
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="overlay" onClick={e => e.target===e.currentTarget && setEditItem(null)}>
+          <div className="sheet">
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <h2 style={{ fontSize:17, fontWeight:800, color:"#1e293b" }}>Edit Data Alter</h2>
+              <button onClick={() => setEditItem(null)} style={{ background:"#f1f5f9", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#64748b" }}>✕</button>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label className="field-label">Tanggal</label>
+              <input type="date" className="field-input" value={editItem.tanggal} onChange={e=>setEditItem(p=>({...p,tanggal:e.target.value}))} />
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label className="field-label">Jenis Pakaian</label>
+              <input className="field-input" value={editItem.jenis_pakaian} onChange={e=>setEditItem(p=>({...p,jenis_pakaian:e.target.value}))} />
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label className="field-label">Jenis Alter <span style={{ fontWeight:400, color:"#94a3b8" }}>(tap × untuk hapus)</span></label>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:8 }}>
+                {(editItem.jenis_alter||[]).map(a => (
+                  <span key={a} style={{ background:"#dcfce7", color:"#166534", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20, display:"flex", alignItems:"center", gap:4 }}>
+                    {a}<span onClick={() => setEditItem(p=>({...p,jenis_alter:p.jenis_alter.filter(x=>x!==a)}))} style={{ cursor:"pointer", opacity:.7 }}>×</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label className="field-label">Jenis Kain</label>
+              <input className="field-input" value={editItem.jenis_kain} onChange={e=>setEditItem(p=>({...p,jenis_kain:e.target.value}))} />
+            </div>
+            <div style={{ marginBottom:16 }}>
+              <label className="field-label">Kode Kain</label>
+              <input className="field-input" value={editItem.kode_kain||""} onChange={e=>setEditItem(p=>({...p,kode_kain:e.target.value}))} />
+            </div>
+            <button onClick={saveEdit} className="btn-primary">✓ Simpan Perubahan</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main App ── */
 function App() {
   const [role,setRole]                     = useState(()=>{try{return localStorage.getItem("vt_role")||null;}catch{return null;}});
@@ -956,6 +1592,7 @@ function App() {
   const [lastSync,setLastSync]             = useState(null);
   const [showSettings,setShowSettings]     = useState(false);
   const [showArchive,setShowArchive]       = useState(false);
+  const [showAlterData,setShowAlterData]   = useState(false);
   const [search,setSearch]                 = useState("");
   const [fetchError,setFetchError]         = useState("");
   const [showMenu,setShowMenu]             = useState(false);
@@ -1115,6 +1752,12 @@ function App() {
                     <span>📦</span><span>Arsip Order</span>
                   </button>
                 )}
+<button onClick={() => { setShowAlterData(true); setShowMenu(false); }}
+                  style={{ width:"100%", padding:"11px 16px", background:"none", border:"none",
+                    textAlign:"left", cursor:"pointer", fontSize:13, color:"#1e293b",
+                    display:"flex", alignItems:"center", gap:10 }}>
+                  <span>📊</span><span>Data Alter</span>
+                </button>
                 {role==="owner" && (
                   <button onClick={() => { setShowSettings(true); setShowMenu(false); }}
                     style={{ width:"100%", padding:"11px 16px", background:"none", border:"none",
@@ -1171,6 +1814,7 @@ function App() {
       {selected     && <DetailModal order={selected} onClose={()=>setSelected(null)} onUpdateStage={handleUpdateStage} onUpdateCatatan={handleUpdateCatatan} onUpdateUkuran={handleUpdateUkuran} onUpdatePercepatan={handleUpdatePercepatan} onAddPhoto={handleAddPhoto} onDeletePhoto={handleDeletePhoto} onUpdateCustomerName={handleUpdateCustomerName} updating={updating} role={role} />}
       {showSettings && <SettingsModal onClose={()=>setShowSettings(false)} onResetUrl={() => { saveRole(null); setShowSettings(false); }} />}
       {showArchive  && <ArchiveModal onClose={() => setShowArchive(false)} />}
+{showAlterData && <AlterDataPage onClose={() => setShowAlterData(false)} role={role} />}
     </div>
   );
 }
